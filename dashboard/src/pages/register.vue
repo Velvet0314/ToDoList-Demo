@@ -1,26 +1,26 @@
 <script setup>
-import "~/assets/bg-bubbles.css";
-import { ref, reactive } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
+import "~/assets/bg-bubbles-square.css"
+import { ref, reactive } from "vue"
+import { ElMessage, ElMessageBox } from "element-plus"
 
 const ruleFormRef = ref(null);
 
 const validatePass = (rule, value, callback) => {
   if (value === "") {
-    callback(new Error("Please input the password"));
+    callback(new Error("Please input the password"))
   } else {
     if (ruleForm.checkPass !== "") {
       if (!ruleFormRef.value) return;
-      ruleFormRef.value.validateField("checkPass");
+      ruleFormRef.value.validateField("checkPass")
     }
     callback();
   }
 };
 const validatePass2 = (rule, value, callback) => {
   if (value === "") {
-    callback(new Error("Please input the password again"));
+    callback(new Error("Please input the password again"))
   } else if (value !== ruleForm.pass) {
-    callback(new Error("Two inputs don't match!"));
+    callback(new Error("Two inputs don't match!"))
   } else {
     callback();
   }
@@ -89,9 +89,13 @@ const open = () => {
 
 <template>
   <div class="wrapper">
-    <el-row>
-      <el-col style="max-width: 475px; max-height: 850px; z-index: 2">
-        <el-card class="card" style="border-radius: 10px" shadow="always">
+    <el-row style="width: 450px; height: auto">
+      <el-col style="z-index: 2" :xs="24" :sm="24" :md="24" :lg="24" class="animate__animated animate__fadeIn">
+        <el-card
+          class="justify-center"
+          style="border-radius: 10px"
+          shadow="always"
+        >
           <div class="text-center my-5">
             <div class="text-2xl font-bold mb-xs">创建您的账户</div>
             <span class="text-sm text-gray-400">已经有账户了？</span>
@@ -140,8 +144,12 @@ const open = () => {
                   type="text"
                   autocomplete="off"
                   placeholder="请输入你的验证码"
-                  class="inputbox"
-                />
+                  class="inputbox-varify"
+                >
+                  <template #append>
+                    <el-button color="#2283e5" class="varify-button">获取</el-button>
+                  </template>
+                </el-input>
               </el-form-item>
               <el-form-item label="密码" prop="pass">
                 <el-input
@@ -183,6 +191,7 @@ const open = () => {
                   type="primary"
                   @click="submitForm(ruleFormRef)"
                   class="text-sm h-[40px] w-[350px] mt-2 mb-8"
+                  color="#2283e5" 
                 >
                   创建账户
                 </el-button>
@@ -192,7 +201,7 @@ const open = () => {
         </el-card>
       </el-col>
     </el-row>
-    <ul class="bg-bubbles">
+    <ul class="square-bg-bubbles">
       <li v-for="n in 10" :key="n"></li>
     </ul>
   </div>
@@ -200,10 +209,25 @@ const open = () => {
 
 <style scoped>
 .login {
-  @apply text-indigo-400 text-sm font-bold;
+  @apply text-sm font-bold;
+  color: #2283e5;
 }
 .inputbox {
   @apply mb-1;
+}
+.animate__animated.animate__fadeInDown {
+  --animate-duration: 2s;
+}
+:deep(.el-input__wrapper) {
+  border-radius: 5px;
+}
+:deep(.inputbox-varify> .el-input__wrapper) {
+  border-radius: 5px 0px 0px 5px;
+}
+:deep(.el-input-group__append) {
+  color:white;
+  background-color:#2283e5;
+  border-radius: 0px 5px 5px 0px;
 }
 :deep(.register_form .el-form-item__label) {
   font-weight: 400;
@@ -225,5 +249,8 @@ const open = () => {
 }
 .el-message-box__title {
   font-weight: bold;
+}
+.el-input-group__append:hover  {
+  background-color: #64a8ed;
 }
 </style>

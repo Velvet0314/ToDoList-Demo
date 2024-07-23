@@ -12,8 +12,10 @@
     "@element-plus/icons-vue": "^2.3.1",
     "@headlessui/vue": "^1.7.22",
     "@heroicons/vue": "^2.1.5",
+    "animate.css": "^4.1.1",
     "element-plus": "^2.7.7",
     "vue": "^3.4.31",
+    "vue-drag-resize": "^2.0.3",
     "vue-router": "^4.4.0"
   },
   "devDependencies": {

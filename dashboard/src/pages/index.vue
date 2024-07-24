@@ -1,6 +1,24 @@
 <script setup>
 import { ref } from "vue";
-import { Menu as IconMenu, Message, Setting } from "@element-plus/icons-vue";
+import { Menu as IconMenu, Setting, Fold } from "@element-plus/icons-vue";
+
+const isCollapse = ref(false);
+
+const handleSelect = (key, keyPath) => {
+  console.log(key, keyPath);
+};
+
+const handleOpen = (key, keyPath) => {
+  console.log(key, keyPath);
+};
+const handleClose = (key, keyPath) => {
+  console.log(key, keyPath);
+};
+const toggleCollapse = () => {
+  isCollapse.value = !isCollapse.value;
+};
+
+const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
 </script>
 
 <template>
@@ -11,153 +29,109 @@ import { Menu as IconMenu, Message, Setting } from "@element-plus/icons-vue";
         mode="horizontal"
         :ellipsis="false"
         @select="handleSelect"
+        class="nav-bar"
+        router="true"
       >
-        <el-menu-item index="0">
-          <el-icon><ElementPlus /></el-icon>
+        <el-menu-item>
+          <el-icon size="100"><ElementPlus /></el-icon>
         </el-menu-item>
         <div class="flex-grow" />
-        <el-menu-item index="1">Processing Center</el-menu-item>
-        <el-sub-menu index="2">
-          <template #title>Workspace</template>
-          <el-menu-item index="2-1">item one</el-menu-item>
-          <el-menu-item index="2-2">item two</el-menu-item>
-          <el-menu-item index="2-3">item three</el-menu-item>
-          <el-sub-menu index="2-4">
-            <template #title>item four</template>
-            <el-menu-item index="2-4-1">item one</el-menu-item>
-            <el-menu-item index="2-4-2">item two</el-menu-item>
-            <el-menu-item index="2-4-3">item three</el-menu-item>
-          </el-sub-menu>
+        <el-sub-menu :teleported="true">
+          <template #title>
+            <el-avatar
+              src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+            />
+          </template>
+          <el-menu-item index="settings">
+            <el-icon><Setting /></el-icon><span>设置</span>
+          </el-menu-item>
+          <el-menu-item index="login">
+            <el-icon><User /></el-icon><span>登出</span>
+          </el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-header>
     <el-container style="height: 100%">
-      <el-aside width="250px">
-        <el-scrollbar>
-          <el-menu :default-openeds="['1', '3']">
-            <el-sub-menu index="1">
-              <template #title>
-                <el-icon><message /></el-icon>Navigator One
-              </template>
-              <el-menu-item-group>
-                <template #title>Group 1</template>
-                <el-menu-item index="1-1">Option 1</el-menu-item>
-                <el-menu-item index="1-2">Option 2</el-menu-item>
-              </el-menu-item-group>
-              <el-menu-item-group title="Group 2">
-                <el-menu-item index="1-3">Option 3</el-menu-item>
-              </el-menu-item-group>
-              <el-sub-menu index="1-4">
-                <template #title>Option4</template>
-                <el-menu-item index="1-4-1">Option 4-1</el-menu-item>
-              </el-sub-menu>
-            </el-sub-menu>
-            <el-sub-menu index="2">
-              <template #title>
-                <el-icon><icon-menu /></el-icon>Navigator Two
-              </template>
-              <el-menu-item-group>
-                <template #title>Group 1</template>
-                <el-menu-item index="2-1">Option 1</el-menu-item>
-                <el-menu-item index="2-2">Option 2</el-menu-item>
-              </el-menu-item-group>
-              <el-menu-item-group title="Group 2">
-                <el-menu-item index="2-3">Option 3</el-menu-item>
-              </el-menu-item-group>
-              <el-sub-menu index="2-4">
-                <template #title>Option 4</template>
-                <el-menu-item index="2-4-1">Option 4-1</el-menu-item>
-              </el-sub-menu>
-            </el-sub-menu>
-            <el-sub-menu index="3">
-              <template #title>
-                <el-icon><setting /></el-icon>Navigator Three
-              </template>
-              <el-menu-item-group>
-                <template #title>Group 1</template>
-                <el-menu-item index="3-1">Option 1</el-menu-item>
-                <el-menu-item index="3-2">Option 2</el-menu-item>
-              </el-menu-item-group>
-              <el-menu-item-group title="Group 2">
-                <el-menu-item index="3-3">Option 3</el-menu-item>
-              </el-menu-item-group>
-              <el-sub-menu index="3-4">
-                <template #title>Option 4</template>
-                <el-menu-item index="3-4-1">Option 4-1</el-menu-item>
-              </el-sub-menu>
-            </el-sub-menu>
-          </el-menu>
-        </el-scrollbar>
+      <el-aside :width="isCollapse ? '64px' : '250px'" :collapse="isCollapse">
+        <el-button
+          class="collapse-btn"
+          @click="toggleCollapse"
+          v-model="isCollapse"
+        >
+          <el-icon size="18">
+            <Fold />
+          </el-icon>
+        </el-button>
+        <el-menu
+          default-active="2"
+          class="sidebar-collaspe"
+          :collapse="isCollapse"
+          @open="handleOpen"
+          @close="handleClose"
+          router="true"
+        >
+          <el-menu-item index="dashboard">
+            <el-icon>
+              <Calendar />
+            </el-icon>
+            <template #title>
+              <span>首页</span>
+            </template>
+          </el-menu-item>
+          <el-menu-item index="plan">
+            <el-icon><icon-menu /></el-icon>
+            <template #title>计划</template>
+          </el-menu-item>
+          <el-menu-item index="data">
+            <el-icon><Histogram /></el-icon>
+            <template #title>数据</template>
+          </el-menu-item>
+          <el-menu-item index="settings">
+            <el-icon>
+              <setting />
+            </el-icon>
+            <template #title>设置</template>
+          </el-menu-item>
+        </el-menu>
       </el-aside>
       <el-main>
-        <el-row :gutter="30" :span="16">
-          <el-col :span="16">
-            <el-card class="calendar">
-              <div class="main-title">我的一天</div>
-              <el-calendar>
-                <template #date-cell="{ data }">
-                  <p :class="data.isSelected ? 'is-selected' : ''">
-                    {{ data.day.split("-").slice(2).join("-") }}
-                    {{ data.isSelected ? "✔️" : "" }}
-                  </p>
-                </template>
-              </el-calendar>
-            </el-card>
-          </el-col>
-          <el-col :span="8">
-            <el-card class="suggestion">
-              <template #header>
-                <div class="card-header">
-                  <span>建议</span>
-                </div>
-              </template>
-              <div>
-                <el-collapse v-model="activeNames" @change="handleChange">
-                  <el-collapse-item title="Consistency" name="1">
-                    <div>1</div>
-                  </el-collapse-item>
-                  <el-collapse-item title="Feedback" name="2">
-                    <div>2</div>
-                  </el-collapse-item>
-                  <el-collapse-item title="Efficiency" name="3">
-                    <div>3</div>
-                  </el-collapse-item>
-                  <el-collapse-item title="Controllability" name="4">
-                    <div>4</div>
-                  </el-collapse-item>
-                </el-collapse>
-              </div>
-            </el-card>
-          </el-col>
-        </el-row>
-        <el-row :gutter="30" :span="8">
-          <el-card class="data-stat">
-            text
-          </el-card>
-          <el-card class="hitoki">
-            text
-          </el-card>
-        </el-row>
+        <router-view></router-view>
       </el-main>
     </el-container>
   </el-container>
 </template>
 
+<style>
+.el-menu--horizontal .el-menu .el-menu-item, .el-menu--horizontal .el-menu .el-sub-menu__title {
+  margin: 5px auto;
+}
+</style>
 <style scoped>
 .is-selected {
   color: #1989fa;
 }
-.el-menu {
-  border-right: none;
+.flex-grow {
+  flex-grow: 1;
+}
+.collapse-btn {
+  border: none;
+  margin: 10px 0 0 8px;
+  position: relative;
+}
+.el-aside {
+  transition: width 0.3s ease;
 }
 .el-calendar-day > p {
-  font-size: 14px;
+  font-size: 13px;
 }
 :deep(.suggestion > .el-card__body) {
   padding-top: 5px;
 }
 :deep(.el-collapse) {
   border-top: none;
+}
+:deep(.sidebar-collaspe:not(.el-menu--collapse)) {
+  width: 250px;
 }
 :deep(.el-collapse-item__header) {
   border-bottom: none;
@@ -176,18 +150,22 @@ import { Menu as IconMenu, Message, Setting } from "@element-plus/icons-vue";
 }
 .suggestion {
   margin: 10px 20px auto auto;
-  width: 350px;
-  height: 540px;
+  height: 490px;
 }
 .data-stat {
-  margin: 20px 0 0 35px;
-  width: 780px;
-  height: 200px;
+  margin: 30px 0 0 35px;
+  height: 250px;
 }
-.hitoki {
-  margin: 20px 0 0 45px;
+.hitokoto-expanded {
   width: 350px;
-  height: 200px;
+  margin: 30px 0 0 45px;
+  height: 250px;
+}
+
+.hitokoto-collapsed {
+  width: 400px;
+  margin: 30px 0 0 60px;
+  height: 250px;
 }
 .card-header {
   font-size: 20px;
@@ -198,8 +176,16 @@ import { Menu as IconMenu, Message, Setting } from "@element-plus/icons-vue";
   font-size: 20px;
   overflow: auto;
 }
+.stat-title {
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+.stat-content .el-progress--line {
+  margin-bottom: 15px;
+  max-width: 600px;
+}
 :deep(.el-calendar-table .el-calendar-day) {
-  height: 65px;
+  height: 55px;
 }
 .animate__animated.animate__fadeInDown {
   --animate-duration: 2s;

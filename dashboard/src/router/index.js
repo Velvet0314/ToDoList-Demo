@@ -5,12 +5,34 @@ import Index from "~/pages/index.vue";
 import Login from "~/pages/login.vue";
 import NotFound from "~/pages/404.vue";
 import Register from "~/pages/register.vue";
-import About from "~/pages/about.vue";
+import Dashboard from "~/components/dashboard.vue";
+import Plan from "~/components/plan.vue";
+import Data from "~/components/data.vue";
+import Settings from "~/components/settings.vue";
 
 const routes = [
   {
     path: "/",
     component: Index,
+    redirect: "/dashboard",
+    children: [
+      {
+        path: "dashboard",
+        component: Dashboard,
+      },
+      {
+        path: "plan",
+        component: Plan,
+      },
+      {
+        path: "data",
+        component: Data,
+      },
+      {
+        path: "settings",
+        component: Settings,
+      },
+    ],
   },
   {
     path: "/login",
@@ -21,13 +43,24 @@ const routes = [
     component: Register,
   },
   {
-    path: "/about",
-    component: About,
+    path: "/plan",
+    name: "Plan",
+    component: Plan,
   },
-  { 
-    path: "/:pathMatch(.*)*", 
-    name: "NotFound", 
-    component: NotFound 
+  {
+    path: "/data",
+    name: "Data",
+    component: Data,
+  },
+  {
+    path: "/settings",
+    name: "Settings",
+    component: Settings,
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    name: "NotFound",
+    component: NotFound,
   },
 ];
 

@@ -4,3 +4,9 @@
     font-weight: normal;
     font-style: normal;
 }
+@font-face {
+    font-family: "hito-font2";
+    src: url('./hito-font2.ttf');
+    font-weight: normal;
+    font-style: normal;
+}

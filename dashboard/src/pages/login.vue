@@ -1,24 +1,68 @@
 <script setup>
-import { reactive } from "vue";
+import { ref, reactive, inject } from "vue";
 import { User, Lock } from "@element-plus/icons-vue";
 import "~/assets/bg-bubbles-triangle.css";
 
-const form = reactive({
+const axios = inject("axios");
+
+const loginFormRef = ref(null);
+
+const loginForm = reactive({
   username: "",
   password: "",
 });
 
-const onSubmit = () => {
-  console.log("submit!");
+const validatePass = (rule, value, callback) => {
+  if (value === "") {
+    callback(new Error("Please input the password"));
+  } else {
+    if (loginForm.checkPass !== "") {
+      if (!loginFormRef.value) return;
+      loginFormRef.value.validateField("checkPass");
+    }
+    callback();
+  }
+};
+
+const loginFormRules = reactive({
+  username: [{ validator: validatePass, trigger: "blur" }],
+  password: [{ validator: validatePass, trigger: "blur" }],
+});
+
+const login = (formEl) => {
+  if (!formEl) return;
+  formEl.validate((valid) => {
+    if (valid) {
+      axios
+        .post("/user/login", {
+          username: loginForm.username,
+          password: loginForm.password,
+        })
+        .then((response) => {
+          console.log("登录成功:", response);
+        })
+        .catch((error) => {
+          console.error("登录失败:", error);
+        });
+    } else {
+      console.log("表单验证失败!");
+    }
+  });
 };
 </script>
 
 <template>
-  <el-row class="mainframework animate__animated animate__fadeIn" >
+  <el-row class="mainframework animate__animated animate__fadeIn">
     <el-col :lg="16" :md="12" class="leftframework">
       <div class="loginwrapper">
-        <div class="title animate__animated animate__bounceInLeft animate__delay-1s">DEMO</div>
-        <div class="description animate__animated animate__fadeInDown animate__delay-2s">
+        <div
+          class="title animate__animated animate__bounceInLeft animate__delay-1s"
+        >
+          DEMO
+        </div>
+        <div
+          class="description animate__animated animate__fadeInDown animate__delay-2s"
+        >
           轻量级,多样化 ToDoList 系统
         </div>
         <ul class="bg-bubbles">
@@ -28,17 +72,23 @@ const onSubmit = () => {
     </el-col>
     <el-col :lg="8" :md="12" class="rightframework">
       <div class="font-bold text-3xl mb-4">登录</div>
-      <el-form :model="form" class="w-[250px]" label-width="auto">
-        <el-form-item>
+      <el-form
+        ref="loginFormRef"
+        :model="loginForm"
+        :rules="loginFormRules"
+        class="w-[250px]"
+        label-width="auto"
+      >
+        <el-form-item prop="username">
           <el-input
-            v-model="form.username"
+            v-model="loginForm.username"
             placeholder="用户名"
             :prefix-icon="User"
           />
         </el-form-item>
-        <el-form-item>
+        <el-form-item prop="password">
           <el-input
-            v-model="form.password"
+            v-model="loginForm.password"
             :prefix-icon="Lock"
             type="password"
             placeholder="密码"
@@ -47,7 +97,7 @@ const onSubmit = () => {
         <el-form-item>
           <el-button
             type="primary"
-            @click="onSubmit, $router.push('/')"
+            @click="login(loginFormRef)"
             class="w-[250px]"
             >登录</el-button
           >

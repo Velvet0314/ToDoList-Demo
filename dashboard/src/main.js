@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 
 import 'animate.css'
 import ElementPlus from 'element-plus'
@@ -11,9 +12,19 @@ import App from './App.vue'
 import router from './router'
 import 'virtual:windi.css'
 
+import axios from 'axios'
+
+const axiosInstance = axios.create({
+  baseURL: '/api'
+});
+
 
 const app = createApp(App)
+const pinia = createPinia()
 
+app.provide('axios', axiosInstance);
+
+app.use(pinia)
 app.use(router)
 app.use(ElementPlus, {
   locale: zhCn,

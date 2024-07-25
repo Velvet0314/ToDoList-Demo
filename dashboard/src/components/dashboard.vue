@@ -1,8 +1,11 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import axios from "axios";
+import { ref, onMounted ,inject } from "vue";
+import { useLayoutStore } from "~/stores/layoutstore";
+import { storeToRefs } from "pinia";
+const axios = inject("axios");
 
-const isCollapse = ref(false);
+const store = useLayoutStore();
+const { isCollapse } = storeToRefs(store);
 
 const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
 
@@ -11,19 +14,29 @@ const hitokotoUrl = ref("#");
 const hitokotoFrom = ref("");
 
 onMounted(() => {
-  axios
-    .get("https://v1.hitokoto.cn")
-    .then(({ data }) => {
-      hitokotoText.value = data.hitokoto;
-      hitokotoFrom.value = data.from;
-      hitokotoUrl.value = `https://hitokoto.cn/?uuid=${data.uuid}`;
-    })
-    .catch((error) => {
-      console.error(error);
-      hitokotoText.value = "加载失败";
-      hitokotoFrom.value = "";
-      hitokotoUrl.value = "#";
-    });
+  const fetchData = () => {
+    axios
+      .get("https://v1.hitokoto.cn")
+      .then(({ data }) => {
+        hitokotoText.value = data.hitokoto;
+        hitokotoFrom.value = data.from;
+        hitokotoUrl.value = `https://hitokoto.cn/?uuid=${data.uuid}`;
+      })
+      .catch((error) => {
+        console.error(error);
+        hitokotoText.value = "加载失败";
+        hitokotoFrom.value = "";
+        hitokotoUrl.value = "#";
+      });
+  };
+
+  fetchData();
+
+  const intervalId = setInterval(fetchData, 60000);
+
+  onMounted(() => {
+    clearInterval(intervalId);
+  });
 });
 </script>
 
@@ -75,7 +88,7 @@ onMounted(() => {
   <el-row :gutter="30" :span="8">
     <el-card
       class="data-stat"
-      :style="{ width: isCollapse ? '900px' : '780px' }"
+      :style="{ width: isCollapse ? '900px' : '770px' }"
       :collapse="isCollapse"
     >
       <div class="stat-content">
@@ -88,37 +101,60 @@ onMounted(() => {
       </div>
     </el-card>
     <el-card
-      class="hitokoto-part flex-shrink-0"
+      class="hitokoto-part"
       :class="isCollapse ? 'hitokoto-collapsed' : 'hitokoto-expanded'"
       :collapse="isCollapse"
     >
-      <p id="hitokoto-title">一言</p>
-      <p id="hitokoto-text">
+      <div id="hitokoto-title">一言</div>
+      <div id="hitokoto-text">
         <a :href="hitokotoUrl">{{ hitokotoText }}</a>
-      </p>
-      <p v-if="hitokotoFrom" id="hitokoto-from">——&ensp;《{{ hitokotoFrom }}》</p>
+      </div>
+      <div v-if="hitokotoFrom" id="hitokoto-from" class="flex flex-col">
+        ——&ensp;《{{ hitokotoFrom }}》
+      </div>
     </el-card>
   </el-row>
 </template>
 
 <style scoped>
+.hitokoto-part {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  height: 100%;
+}
 
 #hitokoto-title {
   font-family: "hito-font";
   font-size: 45px;
+  margin-top: -5%;
   letter-spacing: -5px;
+  position: absolute;
+  top: 12.5%;
+  left: 17.5%;
+  transform: translateX(-50%);
 }
+
 #hitokoto-text {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   font-family: "hito-font";
-  font-size: 25px;
-  letter-spacing: 0px;
-  margin: 7px 5px 5px 5px;
+  line-height: 30px;
+  font-size: 28px;
+  letter-spacing: -2px;
+  margin: 20px 5px 5px 5px;
+  width: 100%;
 }
+
 #hitokoto-from {
   font-family: "hito-font";
-  font-size: 25px;
+  font-size: 26px;
   letter-spacing: -2px;
-  text-align: end;
+  text-align: right;
+  width: 100%;
 }
 .is-selected {
   color: #1989fa;
@@ -168,7 +204,7 @@ onMounted(() => {
 }
 .hitokoto-expanded {
   width: 350px;
-  margin: 30px 0 0 45px;
+  margin: 30px 0 0 40px;
   height: 250px;
 }
 

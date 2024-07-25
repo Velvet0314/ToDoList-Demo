@@ -1,8 +1,12 @@
 <script setup>
 import { ref } from "vue";
 import { Menu as IconMenu, Setting, Fold } from "@element-plus/icons-vue";
+import { useLayoutStore } from "~/stores/layoutstore";
+import { storeToRefs } from "pinia";
 
-const isCollapse = ref(false);
+const store = useLayoutStore();
+const { isCollapse } = storeToRefs(store);
+const { toggleCollapse } = store;
 
 const handleSelect = (key, keyPath) => {
   console.log(key, keyPath);
@@ -14,16 +18,13 @@ const handleOpen = (key, keyPath) => {
 const handleClose = (key, keyPath) => {
   console.log(key, keyPath);
 };
-const toggleCollapse = () => {
-  isCollapse.value = !isCollapse.value;
-};
 
 const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
 </script>
 
 <template>
   <el-container class="animate__animated animate__fadeIn">
-    <el-header style="text-align: right; font-size: 12px">
+    <el-header style="height: 60px; text-align: right; font-size: 12px">
       <el-menu
         :default-active="activeIndex"
         mode="horizontal"
@@ -51,8 +52,17 @@ const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
         </el-sub-menu>
       </el-menu>
     </el-header>
-    <el-container style="height: 100%">
-      <el-aside :width="isCollapse ? '64px' : '250px'" :collapse="isCollapse">
+    <el-container>
+      <el-aside
+        :width="isCollapse ? '64px' : '250px'"
+        :collapse="isCollapse"
+        style="
+          height: calc(100vh - 60px);
+          overflow-y: auto;
+          margin-top: 60px;
+          position: fixed;
+        "
+      >
         <el-button
           class="collapse-btn"
           @click="toggleCollapse"
@@ -87,14 +97,12 @@ const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
             <template #title>数据</template>
           </el-menu-item>
           <el-menu-item index="settings">
-            <el-icon>
-              <setting />
-            </el-icon>
-            <template #title>设置</template>
+            <el-icon><User /></el-icon>
+            <template #title>用户中心</template>
           </el-menu-item>
         </el-menu>
       </el-aside>
-      <el-main>
+      <el-main :class="isCollapse ? 'main-collapsed' : 'main-expanded'">
         <router-view></router-view>
       </el-main>
     </el-container>
@@ -102,13 +110,30 @@ const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
 </template>
 
 <style>
-.el-menu--horizontal .el-menu .el-menu-item, .el-menu--horizontal .el-menu .el-sub-menu__title {
+.el-menu--horizontal .el-menu .el-menu-item,
+.el-menu--horizontal .el-menu .el-sub-menu__title {
   margin: 5px auto;
 }
 </style>
 <style scoped>
 .is-selected {
   color: #1989fa;
+}
+.main-expanded {
+  margin-left: 250px;
+  margin-top: 60px;
+  overflow-y: auto;
+  height: calc(100vh - 60px);
+  position: relative;
+  transition: margin-left 0.3s ease;
+}
+.main-collapsed {
+  margin-left: 50px;
+  margin-top: 60px;
+  overflow-y: auto;
+  height: calc(100vh - 60px);
+  position: relative;
+  transition: margin-left 0.3s ease;
 }
 .flex-grow {
   flex-grow: 1;
@@ -118,8 +143,17 @@ const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
   margin: 10px 0 0 8px;
   position: relative;
 }
+.el-header {
+  transition: width 0.3s ease;
+  position: fixed;
+  width: 100%;
+  z-index: 1000;
+}
 .el-aside {
   transition: width 0.3s ease;
+}
+.el-main {
+  overflow-y: scroll;
 }
 .el-calendar-day > p {
   font-size: 13px;

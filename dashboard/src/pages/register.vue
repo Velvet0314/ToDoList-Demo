@@ -2,6 +2,7 @@
 import "~/assets/bg-bubbles-square.css";
 import { ref, reactive, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { useRouter } from "vue-router";
 
 import { inject } from "vue";
 const axios = inject("axios");
@@ -9,6 +10,7 @@ const axios = inject("axios");
 const timer = ref(0);
 const canSend = ref(true);
 const agreed = ref(false);
+const router = useRouter();
 
 const registerFormRef = ref(null);
 
@@ -37,6 +39,11 @@ const sendverifyCode = () => {
       )}`
     )
     .then((response) => {
+      console.log(response.data.code);
+
+      if (response.data.code === 1) {
+      throw new Error(response.data.message);  // 主动抛出错误
+    }
       timer.value = 120;
       canSend.value = false;
       const countdownInterval = setInterval(() => {
@@ -155,6 +162,7 @@ const register = async (formEl) => {
             type: "success",
             message: "注册成功！",
           });
+          router.push('/login');
         } else {
           // 服务器可能返回一些错误信息，显示给用户
           console.log(response.data.message);

@@ -4,10 +4,9 @@ import { User, Lock } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import "~/assets/bg-bubbles-triangle.css";
 import { useRouter, useRoute } from 'vue-router'
-import { useTokenStore } from '~/stores/tokenstore.js'
+import { useTokenStore } from '~/stores/tokenstore'
 
 const tokenstore = useTokenStore();
-
 
 const router = useRouter()
 
@@ -15,6 +14,7 @@ const axios = inject("axios");
 
 const loginFormRef = ref(null);
 
+// 表单默认值
 const loginForm = reactive({
   userId: "3131492575@qq.com",
   password: "123456",
@@ -62,12 +62,11 @@ const login = (formEl) => {
               type: "success",
               message: "登录成功",
             });
-            console.log("登录成功:", response);
+            console.log("登录成功:", response.data);
 
             console.log('当前账户的token：',response.data.info);
             tokenstore.setToken(response.data.info);
             router.push('/');
-            
           } 
           else {
             ElMessage({

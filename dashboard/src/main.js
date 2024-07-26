@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
 import 'animate.css'
 import ElementPlus from 'element-plus'
@@ -21,6 +22,7 @@ const axiosInstance = axios.create({
 
 const app = createApp(App)
 const pinia = createPinia()
+pinia.use(piniaPluginPersistedstate)
 
 app.provide('axios', axiosInstance);
 

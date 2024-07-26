@@ -1,5 +1,6 @@
 import { componentSizes } from "element-plus";
 import { createRouter, createWebHashHistory } from "vue-router";
+import { useTokenStore } from '~/stores/tokenstore.js'
 
 import Index from "~/pages/index.vue";
 import Login from "~/pages/login.vue";
@@ -68,5 +69,19 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes,
 });
+
+router.beforeEach((to, from)=> {
+  const tokenstore = useTokenStore();
+
+  if (to.path === '/login' || to.path === '/register')
+    return true;
+
+  const tokenStr = tokenstore.token;
+
+  if (!tokenStr) {
+    return '/login';
+  }
+  return true;
+})
 
 export default router;

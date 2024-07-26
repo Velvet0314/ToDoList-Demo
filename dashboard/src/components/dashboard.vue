@@ -32,7 +32,7 @@ onMounted(() => {
 
   fetchData();
 
-  const intervalId = setInterval(fetchData, 60000);
+  const intervalId = setInterval(fetchData, 600000);
 
   onMounted(() => {
     clearInterval(intervalId);

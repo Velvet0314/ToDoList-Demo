@@ -16,6 +16,7 @@ const router = useRouter();
 const tokenStore = useTokenStore();
 
 const logout = () => {
+  
   tokenStore.removeToken();
   console.log("清除后的 token:", tokenStore.token);
   ElMessage({

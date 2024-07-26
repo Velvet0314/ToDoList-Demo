@@ -1,18 +1,18 @@
 <script setup>
 import "~/assets/bg-bubbles-square.css";
-import { ref, reactive } from "vue";
+import { ref, reactive, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 
 import { inject } from "vue";
 const axios = inject("axios");
 
-
-const timer = ref(0);  // 剩余时间
-const canSend = ref(true);  // 是否可以发送验证码
+const timer = ref(0);
+const canSend = ref(true);
+const agreed = ref(false);
 
 const registerFormRef = ref(null);
 
-const sendVerifyCode = () => {
+const sendverifyCode = () => {
   if (!canSend.value) {
     ElMessage({
       type: "info",
@@ -21,7 +21,7 @@ const sendVerifyCode = () => {
     return;
   }
 
-  if (!registerForm.userid) {
+  if (!registerForm.userId) {
     ElMessage({
       type: "error",
       message: "请输入邮箱地址！",
@@ -29,18 +29,21 @@ const sendVerifyCode = () => {
     return;
   }
 
-  console.log("发送验证码给:", registerForm.userid);
+  console.log("发送验证码给:", registerForm.userId);
   axios
-    .post(`/user/getVerificationCode?userid=${encodeURIComponent(registerForm.userid)}`)
+    .post(
+      `/user/getVerificationCode?userId=${encodeURIComponent(
+        registerForm.userId
+      )}`
+    )
     .then((response) => {
-      // 设置倒计时
       timer.value = 120;
       canSend.value = false;
       const countdownInterval = setInterval(() => {
         timer.value--;
         if (timer.value <= 0) {
           clearInterval(countdownInterval);
-          canSend.value = true;  // 重置发送状态
+          canSend.value = true;
         }
       }, 1000);
 
@@ -57,9 +60,33 @@ const sendVerifyCode = () => {
     });
 };
 
+const validateId = (rule, value, callback) => {
+  if (value === "") {
+    callback(new Error("请输入邮箱"));
+  } else {
+    if (registerForm.checkPass !== "") {
+      if (!registerFormRef.value) return;
+      registerFormRef.value.validateField("checkPass");
+    }
+    callback();
+  }
+};
+
+const validateCode = (rule, value, callback) => {
+  if (value === "") {
+    callback(new Error("请输入验证码"));
+  } else {
+    if (registerForm.checkPass !== "") {
+      if (!registerFormRef.value) return;
+      registerFormRef.value.validateField("checkPass");
+    }
+    callback();
+  }
+};
+
 const validatePass = (rule, value, callback) => {
   if (value === "") {
-    callback(new Error("Please input the password"));
+    callback(new Error("请输入密码"));
   } else {
     if (registerForm.checkPass !== "") {
       if (!registerFormRef.value) return;
@@ -71,37 +98,86 @@ const validatePass = (rule, value, callback) => {
 
 const validatePass2 = (rule, value, callback) => {
   if (value === "") {
-    callback(new Error("Please input the password again"));
+    callback(new Error("请再次输入密码"));
   } else if (value !== registerForm.pass) {
-    callback(new Error("Two inputs don't match!"));
+    callback(new Error("请确保两次输入的密码相同"));
   } else {
     callback();
   }
 };
 
 const registerForm = reactive({
-  userid: "",
-  verifycode: "",
+  userId: "",
+  verifyCode: "",
   pass: "",
   checkPass: "",
 });
 
 const registerFormRules = reactive({
-  userid: [{ validator: validatePass, trigger: "blur" }],
-  verifycode: [{ validator: validatePass, trigger: "blur" }],
+  userId: [{ validator: validateId, trigger: "blur" }],
+  verifyCode: [{ validator: validateCode, trigger: "blur" }],
   pass: [{ validator: validatePass, trigger: "blur" }],
   checkPass: [{ validator: validatePass2, trigger: "blur" }],
 });
 
-const register = (formEl) => {
-  if (!formEl) return;
-  formEl.validate((valid) => {
-    if (valid) {
-      console.log("submit!");
-    } else {
-      console.log("error submit!");
-    }
-  });
+const isFormValid = computed(() => {
+  if (!registerFormRef.value) return false;
+  return registerFormRef.value.validate().catch(() => false);
+});
+
+const register = async (formEl) => {
+  if (!formEl) {
+    ElMessage({
+      type: "error",
+      message: "表单提交错误，请刷新页面重试。",
+    });
+    return;
+  }
+
+  // 然后检查是否同意了服务条款
+  if (!agreed.value) {
+    ElMessage({
+      type: "error",
+      message: "请同意服务条款",
+    });
+    return;
+  }
+  const valid = await formEl.validate().catch(() => false);
+  if (valid) {
+    console.log("submit!");
+    axios
+      .post("/user/register", registerForm)
+      .then((response) => {
+        // 假设服务器返回的响应体中有一个字段表示成功
+        console.log(response.data);
+        if (!response.data.code) {
+          ElMessage({
+            type: "success",
+            message: "注册成功！",
+          });
+        } else {
+          // 服务器可能返回一些错误信息，显示给用户
+          console.log(response.data.message);
+          ElMessage({
+            type: "error",
+            message: "请确保验证码填写正确",
+          });
+        }
+      })
+      .catch((error) => {
+        // 捕获任何在请求中发生的错误，并显示给用户
+        ElMessage({
+          type: "error",
+          message: `注册失败: ${error.message}`,
+        });
+      });
+  } else {
+    console.log("error submit!");
+    ElMessage({
+      type: "error",
+      message: "请确保注册信息完整无误",
+    });
+  }
 };
 
 const open = () => {
@@ -187,20 +263,20 @@ const open = () => {
               label-position="top"
               class="register_form"
             >
-              <el-form-item label="邮箱" prop="userid">
+              <el-form-item label="邮箱" prop="userId">
                 <el-input
                   size="large"
-                  v-model="registerForm.userid"
+                  v-model="registerForm.userId"
                   type="text"
                   autocomplete="off"
                   placeholder="请正确输入你的邮箱"
                   class="inputbox"
                 />
               </el-form-item>
-              <el-form-item label="验证码" prop="verifycode">
+              <el-form-item label="验证码" prop="verifyCode">
                 <el-input
                   size="large"
-                  v-model="registerForm.verifycode"
+                  v-model="registerForm.verifyCode"
                   type="text"
                   autocomplete="off"
                   placeholder="请输入你的验证码"
@@ -209,11 +285,11 @@ const open = () => {
                   <template #append>
                     <el-button
                       color="#2283e5"
-                      v-model="registerForm.verifycode"
-                      @click="sendVerifyCode(registerFormRef)"
+                      v-model="registerForm.verifyCode"
+                      @click="sendverifyCode(registerFormRef)"
                       class="varify-button"
                       :disabled="!canSend"
-                      >{{ canSend ? '获取' : ` ${timer} s` }}</el-button
+                      >{{ canSend ? "获取" : ` ${timer} s` }}</el-button
                     >
                   </template>
                 </el-input>
@@ -240,7 +316,7 @@ const open = () => {
               </el-form-item>
               <el-form-item>
                 <el-checkbox
-                  v-model="checked1"
+                  v-model="agreed"
                   label="我同意"
                   size="large"
                   style="margin-top: 0.95px"
@@ -288,7 +364,7 @@ const open = () => {
 :deep(.el-input__wrapper) {
   border-radius: 5px;
 }
-:deep(.el-button--primary.is-disabled) {
+:deep(.is-disabled) {
   background-color: #64a8ed;
   border-color: #64a8ed;
 }

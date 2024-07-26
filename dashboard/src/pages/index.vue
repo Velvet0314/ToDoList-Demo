@@ -2,11 +2,28 @@
 import { ref } from "vue";
 import { Menu as IconMenu, Setting, Fold } from "@element-plus/icons-vue";
 import { useLayoutStore } from "~/stores/layoutstore";
+import { useTokenStore } from '~/stores/tokenstore'
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
+import { ElMessage, ElMessageBox } from "element-plus";
 
 const store = useLayoutStore();
 const { isCollapse } = storeToRefs(store);
 const { toggleCollapse } = store;
+
+
+const router = useRouter();
+const tokenStore = useTokenStore();
+
+const logout = () => {
+  tokenStore.removeToken();
+  console.log("清除后的 token:", tokenStore.token);
+  ElMessage({
+    type: "success",
+    message: "已退出登录",
+  });
+  router.push('/login');
+};
 
 const handleSelect = (key, keyPath) => {
   console.log(key, keyPath);
@@ -46,7 +63,7 @@ const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
           <el-menu-item index="settings">
             <el-icon><Setting /></el-icon><span>设置</span>
           </el-menu-item>
-          <el-menu-item index="login">
+          <el-menu-item @click="logout">
             <el-icon><User /></el-icon><span>登出</span>
           </el-menu-item>
         </el-sub-menu>

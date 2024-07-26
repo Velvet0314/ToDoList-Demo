@@ -1,20 +1,40 @@
 <script setup>
 import { ref, reactive, inject } from "vue";
 import { User, Lock } from "@element-plus/icons-vue";
+import { ElMessage, ElMessageBox } from "element-plus";
 import "~/assets/bg-bubbles-triangle.css";
+import { useRouter, useRoute } from 'vue-router'
+import { useTokenStore } from '~/stores/tokenstore.js'
+
+const tokenstore = useTokenStore();
+
+
+const router = useRouter()
 
 const axios = inject("axios");
 
 const loginFormRef = ref(null);
 
 const loginForm = reactive({
-  username: "",
-  password: "",
+  userId: "3131492575@qq.com",
+  password: "123456",
 });
+
+const validateId = (rule, value, callback) => {
+  if (value === "") {
+    callback(new Error("请输入对应的账户"));
+  } else {
+    if (loginForm.checkPass !== "") {
+      if (!loginFormRef.value) return;
+      loginFormRef.value.validateField("checkPass");
+    }
+    callback();
+  }
+};
 
 const validatePass = (rule, value, callback) => {
   if (value === "") {
-    callback(new Error("Please input the password"));
+    callback(new Error("请输入对应的密码"));
   } else {
     if (loginForm.checkPass !== "") {
       if (!loginFormRef.value) return;
@@ -25,7 +45,7 @@ const validatePass = (rule, value, callback) => {
 };
 
 const loginFormRules = reactive({
-  username: [{ validator: validatePass, trigger: "blur" }],
+  userId: [{ validator: validateId, trigger: "blur" }],
   password: [{ validator: validatePass, trigger: "blur" }],
 });
 
@@ -34,18 +54,38 @@ const login = (formEl) => {
   formEl.validate((valid) => {
     if (valid) {
       axios
-        .post("/user/login", {
-          username: loginForm.username,
-          password: loginForm.password,
-        })
+        .post("/user/login", loginForm)
         .then((response) => {
-          console.log("登录成功:", response);
+          console.log(response.data.code);
+          if (!response.data.code) {
+            ElMessage({
+              type: "success",
+              message: "登录成功",
+            });
+            console.log("登录成功:", response);
+
+            console.log('当前账户的token：',response.data.info);
+            tokenstore.setToken(response.data.info);
+            router.push('/');
+            
+          } 
+          else {
+            ElMessage({
+              type: "error",
+              message: "登录失败",
+            });
+            ElMessage({
+              type: "error",
+              message: "请确保你输入了正确的账户与密码!",
+            });
+            console.log("登录失败:", response);
+          }
         })
         .catch((error) => {
           console.error("登录失败:", error);
         });
     } else {
-      console.log("表单验证失败!");
+      console.log("请确保你输入了正确的账户与密码!");
     }
   });
 };
@@ -79,9 +119,9 @@ const login = (formEl) => {
         class="w-[250px]"
         label-width="auto"
       >
-        <el-form-item prop="username">
+        <el-form-item prop="userId">
           <el-input
-            v-model="loginForm.username"
+            v-model="loginForm.userId"
             placeholder="用户名"
             :prefix-icon="User"
           />

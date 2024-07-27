@@ -1,20 +1,104 @@
 <script setup>
-import { ref, reactive, inject, onMounted } from "vue";
+import { ref, reactive, inject, onMounted, onUnmounted, computed } from "vue";
 import { useLayoutStore } from "~/stores/layoutstore";
 import { storeToRefs } from "pinia";
 import getUserInfo from "~/api/getUserInfo";
 import { useTokenStore } from "~/stores/tokenstore";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { useRouter } from "vue-router";
 
+// 需要的常量
 const timer = ref(0);
 const userId = ref(null);
+const nickname = ref(null);
 const canSend = ref(true);
 const axios = inject("axios");
 const store = useLayoutStore();
+const avatar = ref(null);
 const tokenStore = useTokenStore();
+const router = useRouter();
 const { isCollapse } = storeToRefs(store);
-
 const passFormRef = ref(null);
+const basicInfoFormRef = ref(null);
+
+// 基本信息表单及其验证规则
+const basicInfoForm = reactive({
+  nickname: "",
+});
+
+const validateNickname = (rule, value, callback) => {
+  if (value === "") {
+    callback(new Error("请输入新的昵称"));
+  } else {
+    if (basicInfoForm.nickname !== "") {
+      if (!basicInfoFormRef.value) return;
+      basicInfoFormRef.value.validateField("nickname");
+    }
+    callback();
+  }
+};
+
+const basicInfoFormRules = reactive({
+  nickname: [{ validator: validateNickname, trigger: "blur" }],
+});
+
+const resetBasicInfo = async (formEl) => {
+  if (!formEl) {
+    ElMessage({
+      type: "error",
+      message: "表单提交错误，请刷新页面重试。",
+    });
+    return;
+  }
+  const valid = await formEl.validate().catch(() => false);
+  if (valid) {
+    console.log("submit!");
+    const token = tokenStore.token;
+    console.log(token);
+    console.log(basicInfoForm);
+    axios
+      .patch("/user/updateNickname", basicInfoForm, {
+        headers: {
+          Authorization: token,
+        },
+      })
+      .then((response) => {
+        console.log(response.data);
+        if (!response.data.code) {
+          ElMessage({
+            type: "success",
+            message: "修改成功!",
+          });
+        } else {
+          console.log(response.data.message);
+          ElMessage({
+            type: "error",
+            message: `修改失败：请确保新昵称与旧昵称没有重复`,
+          });
+        }
+      })
+      .catch((error) => {
+        ElMessage({
+          type: "error",
+          message: `修改失败: ${error.message}`,
+        });
+      });
+  } else {
+    console.log("error submit!");
+    ElMessage({
+      type: "error",
+      message: "请确保填写的信息完整无误",
+    });
+  }
+};
+
+// 密码表单及其验证规则
+const passForm = reactive({
+  userId: "",
+  verifyCode: "",
+  pass: "",
+  checkPass: "",
+});
 
 const validateCode = (rule, value, callback) => {
   if (value === "") {
@@ -39,6 +123,7 @@ const validatePass = (rule, value, callback) => {
     callback();
   }
 };
+
 const validatePass2 = (rule, value, callback) => {
   if (value === "") {
     callback(new Error("请再次输入新密码"));
@@ -49,19 +134,13 @@ const validatePass2 = (rule, value, callback) => {
   }
 };
 
-const passForm = reactive({
-  userId: "",
-  verifyCode: "",
-  pass: "",
-  checkPass: "",
-});
-
 const passFormRules = reactive({
-  verifycode: [{ validator: validateCode, trigger: "blur" }],
+  verifyCode: [{ validator: validateCode, trigger: "blur" }],
   pass: [{ validator: validatePass, trigger: "blur" }],
   checkPass: [{ validator: validatePass2, trigger: "blur" }],
 });
 
+// 验证码请求
 const sendverifyCode = () => {
   if (!canSend.value) {
     ElMessage({
@@ -99,6 +178,7 @@ const sendverifyCode = () => {
     });
 };
 
+// 重置密码表单提交
 const resetPass = async (formEl) => {
   if (!formEl) {
     ElMessage({
@@ -117,7 +197,7 @@ const resetPass = async (formEl) => {
     axios
       .put("/user/newUpdatePwd", passForm, {
         headers: {
-          "Authorization": "token",
+          Authorization: token,
         },
       })
       .then((response) => {
@@ -129,7 +209,6 @@ const resetPass = async (formEl) => {
           });
           router.push("/login");
         } else {
-          // 服务器可能返回一些错误信息，显示给用户
           console.log(response.data.message);
           ElMessage({
             type: "error",
@@ -138,7 +217,6 @@ const resetPass = async (formEl) => {
         }
       })
       .catch((error) => {
-        // 捕获任何在请求中发生的错误，并显示给用户
         ElMessage({
           type: "error",
           message: `修改失败: ${error.message}`,
@@ -153,34 +231,89 @@ const resetPass = async (formEl) => {
   }
 };
 
-const imageUrl = ref("");
+// 头像上传
+const imageUrl = ref(null);
+const apiUrl = ref("/api/user/uploadPic");
 
-const handleAvatarSuccess = (response, uploadFile) => {
-  imageUrl.value = URL.createObjectURL(uploadFile.raw);
+const handleAvatarSuccess = async (response, uploadFile) => {
+  console.log(response);
+  if (!response.code) {
+    imageUrl.value = response.info;
+    ElMessage({
+      type: "success",
+      message: "修改成功",
+    });
+  } else {
+    ElMessage({
+      type: "error",
+      message: "修改失败",
+    });
+    throw new error("上传图片错误");
+  }
 };
 
 const beforeAvatarUpload = (rawFile) => {
-  if (rawFile.type !== "image/jpeg") {
-    ElMessage.error("Avatar picture must be JPG format!");
+  // 允许图片格式为 JPEG 或 PNG
+  if (rawFile.type !== "image/jpeg" && rawFile.type !== "image/png") {
+    ElMessage.error("Avatar picture must be JPG or PNG format!");
     return false;
-  } else if (rawFile.size / 1024 / 1024 > 2) {
-    ElMessage.error("Avatar picture size can not exceed 2MB!");
+  }
+  // 文件大小限制调整为不超过 4MB
+  else if (rawFile.size / 1024 / 1024 > 4) {
+    ElMessage.error("Avatar picture size can not exceed 4MB!");
     return false;
   }
   return true;
 };
 
+// 获取用户信息：账户id, 昵称nickName, 头像
 onMounted(async () => {
   const tokenStore = useTokenStore();
   try {
-    const id = await getUserInfo(tokenStore, axios);
-    userId.value = id;
-    passForm.userId = id;
-    console.log(passForm.userId);
-    // console.log("用户ID:", userId);
+    const info = await getUserInfo(tokenStore, axios);
+    userId.value = info.user_name;
+    nickname.value = info.nickname;
+    avatar.value = info.user_pic;
+    // console.log(userId.value);
+    // console.log(nickname.value);
+
+    passForm.userId = userId.value;
+    basicInfoForm.nickname = nickname.value;
   } catch (error) {
     console.error("获取用户信息失败:", error);
   }
+});
+
+// 自适应布局
+
+// 页面大小小于一定大小时自动收缩侧边栏
+const handleResize = () => {
+  width.value = window.innerWidth;
+  isCollapse.value = window.innerWidth < 768;
+};
+
+const width = ref(window.innerWidth);
+
+onMounted(() => {
+  window.addEventListener("resize", handleResize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", handleResize);
+});
+
+const showCard = computed(() => {
+  if (isCollapse.value) {
+    return width.value >= 900;
+  }
+  return width.value > 1024;
+});
+
+const cardStyleP = computed(() => {
+  if (isCollapse.value) {
+    if (width.value < 1024) return `${width.value - 100}px`;
+  }
+  if (width.value < 1024) return `${width.value - 300}px`;
 });
 </script>
 
@@ -207,7 +340,7 @@ onMounted(async () => {
       <el-card
         class="config-password"
         shadow="always"
-        :style="{ width: isCollapse ? '600px' : '550px' }"
+        :style="{ width: cardStyleP }"
         :collapse="isCollapse"
       >
         <template #header>
@@ -295,7 +428,7 @@ onMounted(async () => {
     </el-col>
     <el-col :xs="12" :sm="12" :md="12" :lg="12">
       <el-card
-        style="border-radius: 10px"
+        v-if="showCard"
         shadow="always"
         :class="isCollapse ? 'config-basic-collapsed' : 'config-basic-expand'"
       >
@@ -304,14 +437,89 @@ onMounted(async () => {
         </template>
         <div class="flex flex-col items-center justify-center">
           <el-form
+            ref="basicInfoFormRef"
             style="max-width: 600px"
-            :model="passForm"
-            status-icon
-            :passFormRules="passFormRules"
+            :model="basicInfoForm"
+            :rules="basicInfoFormRules"
             label-width="80px"
             label-position="left"
             class="register_form mt-5"
           >
+            <el-form-item label="昵称" prop="nickname">
+              <el-input
+                size="large"
+                v-model="basicInfoForm.nickname"
+                type="text"
+                autocomplete="off"
+                class="inputbox"
+              />
+            </el-form-item>
+            <el-form-item>
+              <el-button
+                type="primary"
+                @click="resetBasicInfo(basicInfoFormRef)"
+                class="text-sm h-[40px] w-[90px] mt-4 mb-5"
+                color="#2283e5"
+              >
+                确认修改
+              </el-button></el-form-item
+            >
+          </el-form>
+        </div>
+      </el-card>
+    </el-col>
+    <el-col :xs="12" :sm="12" :md="12" :lg="12">
+      <el-card
+        v-if="showCard"
+        shadow="always"
+        :class="isCollapse ? 'config-basic-collapsed' : 'config-basic-expand'"
+      >
+        <template #header>
+          <div class="font-bold mb-xs" style="font-size: 18px">头像修改</div>
+        </template>
+        <el-form>
+          <el-form-item label="头像" prop="avatar">
+            <el-upload
+              class="avatar-uploader"
+              :action="apiUrl"
+              :headers="{
+                Authorization: tokenStore.token,
+              }"
+              :show-file-list="false"
+              :on-success="handleAvatarSuccess"
+              :before-upload="beforeAvatarUpload"
+            >
+              <img v-if="imageUrl" :src="imageUrl" class="avatar" />
+              <el-avatar :src="avatar" v-else class="avatar-uploader-icon" shape="square" :size="125"></el-avatar>
+            </el-upload>
+          </el-form-item>
+        </el-form>
+      </el-card>
+    </el-col>
+  </el-row>
+  <el-row>
+    <el-col>
+      <el-card
+        v-if="!showCard"
+        shadow="always"
+        :class="isCollapse ? 'config-basic-collapsed1' : 'config-basic-expand1'"
+      >
+        <!-- 框名 -->
+        <template #header>
+          <div class="font-bold mb-xs" style="font-size: 18px">基本信息</div>
+        </template>
+
+        <div class="flex flex-col items-center justify-center">
+          <el-form
+            style="max-width: 600px"
+            :model="passForm"
+            status-icon
+            :rules="rules"
+            label-width="80px"
+            label-position="left"
+            class="register_form mt-5"
+          >
+            <!-- 昵称 -->
             <el-form-item label="昵称" prop="nickname">
               <el-input
                 size="large"
@@ -321,16 +529,35 @@ onMounted(async () => {
                 placeholder="请输入你的昵称"
               />
             </el-form-item>
+          </el-form>
+        </div>
+      </el-card>
+    </el-col>
+    <el-col :xs="12" :sm="12" :md="12" :lg="12">
+      <el-card
+        shadow="always"
+        v-if="!showCard"
+        :style="{ width: cardStyleP }"
+        :class="isCollapse ? 'config-basic-collapsed1' : 'config-basic-expand1'"
+      >
+        <template #header>
+          <div class="font-bold mb-xs" style="font-size: 18px">头像修改</div>
+        </template>
+        <div class="flex flex-col items-center justify-center">
+          <el-form>
             <el-form-item label="头像" prop="avatar">
               <el-upload
                 class="avatar-uploader"
-                action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
+                :action="apiUrl"
+                :headers="{
+                  Authorization: tokenStore.token,
+                }"
                 :show-file-list="false"
                 :on-success="handleAvatarSuccess"
                 :before-upload="beforeAvatarUpload"
               >
                 <img v-if="imageUrl" :src="imageUrl" class="avatar" />
-                <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+                <el-avatar :src="avatar" v-else class="avatar-uploader-icon" shape="square" :size="125"></el-avatar>
               </el-upload>
             </el-form-item>
           </el-form>
@@ -341,52 +568,78 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.avatar-uploader .avatar {
-  width: 178px;
-  height: 178px;
+:deep(.el-upload) {
+  width: 125px;
+  height: 125px;
   display: block;
 }
+.config-basic-collapsed,
+.config-basic-expand {
+  min-height: 90%;
+}
+
 .config-basic-collapsed {
   @apply mr-30;
-  width: 650px;
+  margin: 60px 0 0 50px;
+  width: 80%;
 }
+
 .config-basic-expand {
   @apply ml-10;
-  width: 550px;
+  margin: 30px 0 0 50px;
+  width: 80%;
+  height: 450px;
 }
+.config-basic-collapsed1 {
+  @apply mr-30;
+  margin: 50px auto;
+}
+
+.config-basic-expand1 {
+  @apply ml-10;
+  margin: 50px auto;
+}
+
 .config-password {
   border-radius: 10px;
-  width: 550px;
-  height: 420px;
-  margin-left: 40px;
+
+  margin: auto;
 }
+
 .login {
   @apply text-sm font-bold;
   color: #2283e5;
 }
+
 .inputbox {
   @apply mb-1;
 }
+
 .animate__animated.animate__fadeInDown {
   --animate-duration: 2s;
 }
+
 :deep(.el-input__wrapper) {
   border-radius: 5px;
 }
+
 :deep(.inputbox-varify > .el-input__wrapper) {
   border-radius: 5px 0px 0px 5px;
 }
+
 :deep(.el-input-group__append) {
   color: white;
   background-color: #2283e5;
   border-radius: 0px 5px 5px 0px;
 }
+
 :deep(.register_form .el-form-item__label) {
   font-weight: 400;
   color: #000000;
   width: 350px;
   margin-top: 3px;
 }
+
 :deep(.el-message-box__header) {
   font-weight: bold;
 }
@@ -399,12 +652,15 @@ onMounted(async () => {
   --el-messagebox-border-radius: 10px;
   --el-messagebox-font-size: 22px;
 }
+
 .el-message-box__title {
   font-weight: bold;
 }
+
 .el-input-group__append:hover {
   background-color: #64a8ed;
 }
+
 .avatar-uploader .el-upload {
   border: 1px dashed var(--el-border-color);
   border-radius: 6px;
@@ -419,10 +675,12 @@ onMounted(async () => {
 }
 
 .el-icon.avatar-uploader-icon {
+  position: absolute;
+  top: 50%; /* 垂直居中 */
+  left: 50%; /* 水平居中 */
+  transform: translate(-50%, -50%); /* 精确居中定位 */
   font-size: 28px;
   color: #8c939d;
-  width: 178px;
-  height: 178px;
   text-align: center;
 }
 </style>

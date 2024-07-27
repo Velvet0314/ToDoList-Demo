@@ -10,7 +10,7 @@ const getUserInfo = async (tokenStore, axios) => {
 
         if (!response.data.code) {
             console.log('获取用户信息成功:', response.data.info);
-            return response.data.info.user_name;
+            return response.data.info;
         } else {
             console.error('获取用户信息失败:', response.data.message);
             throw new Error(response.data.message);

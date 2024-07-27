@@ -1,16 +1,19 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, onUnmounted, inject } from "vue";
 import { Menu as IconMenu, Setting, Fold } from "@element-plus/icons-vue";
 import { useLayoutStore } from "~/stores/layoutstore";
 import { useTokenStore } from '~/stores/tokenstore'
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
+import getUserInfo from "~/api/getUserInfo";
 
 const store = useLayoutStore();
 const { isCollapse } = storeToRefs(store);
 const { toggleCollapse } = store;
 
+const axios = inject("axios");
+const avatar = ref(null);
 
 const router = useRouter();
 const tokenStore = useTokenStore();
@@ -37,7 +40,20 @@ const handleClose = (key, keyPath) => {
   console.log(key, keyPath);
 };
 
-const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
+
+onMounted(async () => {
+  const tokenStore = useTokenStore();
+  try {
+    const info = await getUserInfo(tokenStore, axios);
+    console.log(info);
+    console.log(info.user_pic);
+    avatar.value = info.user_pic;
+
+  } catch (error) {
+    console.error("获取用户信息失败:", error);
+  }
+});
+
 </script>
 
 <template>
@@ -58,7 +74,7 @@ const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
         <el-sub-menu :teleported="true">
           <template #title>
             <el-avatar
-              src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+              :src="avatar"
             />
           </template>
           <el-menu-item index="settings">

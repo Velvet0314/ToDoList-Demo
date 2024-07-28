@@ -19,8 +19,8 @@ const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
 const axios = inject("axios");
 const store = useLayoutStore();
 const { isCollapse } = storeToRefs(store);
-const input = ref('');
-const todayTasks = reactive([]);
+const input = ref("");
+const tasksList = reactive([]);
 
 // 页面大小小于一定大小时自动收缩侧边栏
 const handleResize = () => {
@@ -46,148 +46,6 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener("resize", handleResize);
 });
-
-const handleItemClick = (task) => {
-  showDetailCard.value = true; // 显示详情界面
-};
-
-const showEditCard = ref(false); // 用于控制编辑卡片的显示
-const showDetailCard = ref(true);
-
-const getAllTodayTask = async () => {
-  const tokenStore = useTokenStore(); // 确保获取最新的 token
-  const token = tokenStore.token;
-
-  axios
-    .get("/task/getTodayTask", {
-      headers: {
-        Authorization: token,
-      },
-    })
-    .then((response) => {
-      console.log(response.data.info);
-      let taskArray = response.data.info;
-
-      // 清空当前任务列表，避免重复添加
-      todayTasks.splice(0, todayTasks.length);
-
-      // 填充任务列表
-      for (let i = 0; i < taskArray.length; i++) {
-        todayTasks.push(taskArray[i]);
-      }
-
-      // 根据任务列表的内容决定是否显示详情卡片
-      showDetailCard.value = true;
-    })
-    .catch((error) => {
-      console.error("Failed to fetch today's tasks:", error);
-    });
-};
-
-onMounted(() => {
-  getAllTodayTask(); // 调用函数获取今天的任务
-});
-
-const addNewTask = async () => {
-  todayTasks.splice(0, todayTasks.length);
-  // 获取token,通过验证
-  const tokenStore = useTokenStore();
-  const token = tokenStore.token;
-  console.log(token);
-
-  // 前端发送请求
-  try {
-    await axios
-      .post("/task/add", todayTasks, {
-        headers: {
-          Authorization: token,
-        },
-      })
-      // 处理后端返回的值
-      .then((response) => {
-        let taskArray = [];
-        taskArray = response.data.info;
-        for (let i = 0; i < taskArray.length; i++) {
-          todayTasks.push(taskArray[i]);
-        }
-        console.log(todayTasks);
-        // console.log(todayTasks[0]); // 输出第一个任务
-        // console.log(todayTasks[0].task_name); // 输出第一个任务的名称
-      });
-
-    // 获取当前新增的任务
-    // todayTasks.id = infoArray[infoArray.length - 1].id;
-    // console.log(todayTasks.id);
-  } catch (error) {}
-};
-
-const deteleTask = async (task, kind) => {
-  const tokenStore = useTokenStore();
-  const token = tokenStore.token;
-  console.log(token);
-  todayTasks.splice(0, todayTasks.length);
-  try {
-    // 发送删除请求到后端，这里假设后端提供了一个删除任务的API
-    await axios
-      .put(
-        `/task/deleteTask?id=${encodeURIComponent(task.id)}`,
-        {},
-        {
-          headers: {
-            Authorization: token,
-          },
-        }
-      )
-      .then((response) => {
-        switch (kind) {
-          case 5:
-            {
-              axios
-                .get("/task/getTodayTask", {
-                  headers: {
-                    Authorization: token,
-                  },
-                })
-                .then((response) => {
-                  console.log(response.data.info);
-                  let taskArray = [];
-                  taskArray = response.data.info;
-                  for (let i = 0; i < taskArray.length; i++) {
-                    todayTasks.push(taskArray[i]);
-                  }
-                });
-            }
-            break;
-
-          case 4:
-            {
-            }
-            break;
-
-          case 3:
-            {
-            }
-            break;
-
-          case 2:
-            {
-            }
-            break;
-
-          case 1:
-            {
-            }
-            break;
-          default:
-            {
-            }
-            break;
-        }
-      });
-  } catch (error) {
-    console.error("Failed to delete task", error);
-  }
-};
 
 const cardStyleList = computed(() => {
   if (width.value < 900) {
@@ -226,8 +84,263 @@ const inputStyle = computed(() => {
   return width.value < 1024 ? "50%" : "75%";
 });
 
+const showEditCard = ref(false); // 用于控制编辑卡片的显示
+const showDetailCard = ref(true);
+
+// 核心功能
+
+const kindChoose = (kind) => {
+  showDetailCard.value = true; // 显示详情界面
+
+  const tokenStore = useTokenStore();
+  const token = tokenStore.token;
+
+  switch (kind) {
+    case 1:
+      {
+        axios
+          .get("/task/getTodayTask", {
+            headers: {
+              Authorization: token,
+            },
+          })
+          .then((response) => {
+            console.log(response.data.info);
+            let taskArray = [];
+            taskArray = response.data.info;
+            tasksList.splice(0, tasksList.length);
+            for (let i = 0; i < taskArray.length; i++) {
+              tasksList.push(taskArray[i]);
+            }
+          });
+      }
+      break;
+
+    case 2:
+      {
+        axios
+          .get("/task/getAllTasks", {
+            headers: {
+              Authorization: token,
+            },
+          })
+          .then((response) => {
+            console.log(response.data.info);
+            let taskArray = [];
+            taskArray = response.data.info;
+            tasksList.splice(0, tasksList.length);
+
+            for (let i = 0; i < taskArray.length; i++) {
+              tasksList.push(taskArray[i]);
+            }
+          });
+      }
+      break;
+
+    case 3:
+      {
+        axios
+          .get("/task/getAllUnfinishedTasks", {
+            headers: {
+              Authorization: token,
+            },
+          })
+          .then((response) => {
+            console.log(response.data.info);
+            let taskArray = [];
+            taskArray = response.data.info;
+            tasksList.splice(0, tasksList.length);
+
+            for (let i = 0; i < taskArray.length; i++) {
+              tasksList.push(taskArray[i]);
+            }
+          });
+      }
+      break;
+
+    case 4:
+      {
+        axios
+          .get("/task/getAllFinishedTasks", {
+            headers: {
+              Authorization: token,
+            },
+          })
+          .then((response) => {
+            console.log(response.data.info);
+            let taskArray = [];
+            taskArray = response.data.info;
+            tasksList.splice(0, tasksList.length);
+
+            for (let i = 0; i < taskArray.length; i++) {
+              tasksList.push(taskArray[i]);
+            }
+          });
+      }
+      break;
+
+    case 5:
+      {
+        axios
+          .get("/task/getAllFavourTasks", {
+            headers: {
+              Authorization: token,
+            },
+          })
+          .then((response) => {
+            console.log(response.data.info);
+            let taskArray = [];
+            taskArray = response.data.info;
+            tasksList.splice(0, tasksList.length);
+
+            for (let i = 0; i < taskArray.length; i++) {
+              tasksList.push(taskArray[i]);
+            }
+          });
+      }
+      break;
+    default:
+      {
+      }
+      break;
+  }
+};
+
+const getAllTodayTask = async () => {
+  const tokenStore = useTokenStore(); // 确保获取最新的 token
+  const token = tokenStore.token;
+
+  axios
+    .get("/task/getTodayTask", {
+      headers: {
+        Authorization: token,
+      },
+    })
+    .then((response) => {
+      console.log(response.data.info);
+      let taskArray = response.data.info;
+
+      // 清空当前任务列表，避免重复添加
+      tasksList.splice(0, tasksList.length);
+
+      // 填充任务列表
+      for (let i = 0; i < taskArray.length; i++) {
+        tasksList.push(taskArray[i]);
+      }
+
+      // 根据任务列表的内容决定是否显示详情卡片
+      showDetailCard.value = true;
+    })
+    .catch((error) => {
+      console.error("Failed to fetch today's tasks:", error);
+    });
+};
+
+const getAllTask = () => {};
+
+const addNewTask = async () => {
+  tasksList.splice(0, tasksList.length);
+  // 获取token,通过验证
+  const tokenStore = useTokenStore();
+  const token = tokenStore.token;
+  console.log(token);
+
+  // 前端发送请求
+  try {
+    await axios
+      .post("/task/add", tasksList, {
+        headers: {
+          Authorization: token,
+        },
+      })
+      // 处理后端返回的值
+      .then((response) => {
+        let taskArray = [];
+        taskArray = response.data.info;
+        for (let i = 0; i < taskArray.length; i++) {
+          tasksList.push(taskArray[i]);
+        }
+        console.log(tasksList);
+        // console.log(tasksList[0]); // 输出第一个任务
+        // console.log(tasksList[0].task_name); // 输出第一个任务的名称
+      });
+
+    // 获取当前新增的任务
+    // tasksList.id = infoArray[infoArray.length - 1].id;
+    // console.log(tasksList.id);
+  } catch (error) {}
+};
+
+const deteleTask = async (task, kind = kind) => {
+  const tokenStore = useTokenStore();
+  const token = tokenStore.token;
+  console.log(token);
+  tasksList.splice(0, tasksList.length);
+  try {
+    // 发送删除请求到后端，这里假设后端提供了一个删除任务的API
+    await axios
+      .put(
+        `/task/deleteTask?id=${encodeURIComponent(task.id)}`,
+        {},
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      )
+      .then((response) => {
+        switch (kind) {
+          case 1:
+            {
+              axios
+                .get("/task/getTodayTask", {
+                  headers: {
+                    Authorization: token,
+                  },
+                })
+                .then((response) => {
+                  console.log(response.data.info);
+                  let taskArray = [];
+                  taskArray = response.data.info;
+                  for (let i = 0; i < taskArray.length; i++) {
+                    tasksList.push(taskArray[i]);
+                  }
+                });
+            }
+            break;
+
+          case 2:
+            {
+            }
+            break;
+
+          case 3:
+            {
+            }
+            break;
+
+          case 4:
+            {
+            }
+            break;
+
+          case 5:
+            {
+            }
+            break;
+          default:
+            {
+            }
+            break;
+        }
+      });
+  } catch (error) {
+    console.error("Failed to delete task", error);
+  }
+};
+
 const selectedTask = ref(null); // 选中的任务
-const selectedContent = reactive([]); // 选中的任务
+const selectedTaskSteps = reactive([]); // 选中的任务
 
 const taskDetail = async (task) => {
   showEditCard.value = true; // 显示编辑界面
@@ -249,8 +362,8 @@ const taskDetail = async (task) => {
         }
       )
       .then((response) => {
-        selectedContent.values = response.data.info;
-        console.log(selectedContent.values);
+        selectedTaskSteps.values = response.data.info;
+        console.log(selectedTaskSteps.values);
       });
   } catch (error) {}
 };
@@ -260,6 +373,8 @@ const saveTaskName = async () => {
   const token = tokenStore.token;
   console.log(token);
 
+  console.log(selectedTaskSteps.values);
+  console.log(selectedTask.value);
   try {
     await axios
       .put("/task/updateTask", selectedTask.value, {
@@ -268,7 +383,22 @@ const saveTaskName = async () => {
         },
       })
       .then((response) => {
-        // console.log(response.data);
+        console.log(response.data);
+        if (!response.data.code) {
+          // 在本地任务列表中找到并更新任务
+          const index = tasksList.findIndex(
+            (task) => task.id === selectedTask.value.id
+          );
+          if (index !== -1) {
+            tasksList[index] = { ...tasksList[index], ...selectedTask.value };
+          }
+          console.log("Task updated successfully in the local list.");
+        } else {
+          console.error(
+            "Failed to update task on server: ",
+            response.data.message
+          );
+        }
       });
   } catch (error) {}
 };
@@ -280,7 +410,7 @@ const saveSteps = async () => {
 
   try {
     await axios
-      .put("/step/updateStep", selectedContent.values, {
+      .put("/step/updateStep", selectedTaskSteps.values, {
         headers: {
           Authorization: token,
         },
@@ -298,7 +428,7 @@ const addNewStep = async () => {
 
   // 准备新步骤的基本信息
   const newStep = {
-    sequence: selectedContent.values.length + 1, // 假设 sequence 是基于数组长度
+    sequence: selectedTaskSteps.values.length + 1, // 假设 sequence 是基于数组长度
     content: "", // 初始内容为空
   };
 
@@ -328,8 +458,8 @@ const addNewStep = async () => {
     );
 
     if (allStepsResponse.data.info) {
-      selectedContent.values = allStepsResponse.data.info; // 更新步骤列表
-      console.log("Updated steps:", selectedContent.values);
+      selectedTaskSteps.values = allStepsResponse.data.info; // 更新步骤列表
+      console.log("Updated steps:", selectedTaskSteps.values);
     }
   } catch (error) {
     console.error("Error adding new step:", error);
@@ -354,7 +484,9 @@ const deleteStep = async (step) => {
         }
       )
       .then((response) => {
-        console.log(response);
+        // console.log(response.data.info);
+        selectedTaskSteps.values = response.data.info;
+        console.log(selectedTaskSteps);
       });
   } catch (error) {}
 };
@@ -378,16 +510,19 @@ const deleteStep = async (step) => {
             </div>
             <div class="cards-wrapper">
               <el-card class="task-card cursor-pointer" shadow="hover">
-                <div @click="handleItemClick(1)">全部</div>
+                <div @click="kindChoose(1)">我的一天</div>
               </el-card>
               <el-card class="task-card cursor-pointer" shadow="hover">
-                <div @click="handleItemClick(2)">未完成</div>
+                <div @click="kindChoose(2)">全部</div>
               </el-card>
               <el-card class="task-card cursor-pointer" shadow="hover">
-                <div @click="handleItemClick(3)">已完成</div>
+                <div @click="kindChoose(3)">未完成</div>
               </el-card>
               <el-card class="task-card cursor-pointer" shadow="hover">
-                <div @click="handleItemClick(4)">重要</div>
+                <div @click="kindChoose(4)">已完成</div>
+              </el-card>
+              <el-card class="task-card cursor-pointer" shadow="hover">
+                <div @click="kindChoose(5)">重要</div>
               </el-card>
             </div>
           </el-collapse>
@@ -416,7 +551,7 @@ const deleteStep = async (step) => {
         <el-scrollbar style="max-height: 86vh; overflow-y: auto">
           <div
             class="my-10 task-item"
-            v-for="task in todayTasks"
+            v-for="task in tasksList"
             :key="task.id"
           >
             <el-dropdown trigger="contextmenu" placement="bottom-start">
@@ -427,7 +562,7 @@ const deleteStep = async (step) => {
                 <el-dropdown-menu>
                   <el-dropdown-item>标记为重要</el-dropdown-item>
                   <el-dropdown-item>标记为已完成</el-dropdown-item>
-                  <el-dropdown-item divided @click.native="deteleTask(task, 5)">
+                  <el-dropdown-item divided @click.native="deteleTask(task)">
                     删除任务
                   </el-dropdown-item>
                 </el-dropdown-menu>
@@ -458,7 +593,10 @@ const deleteStep = async (step) => {
                   class="editable-title my-10"
                 />
               </template>
-              <div v-for="step in selectedContent.values" :key="step.sequence">
+              <div
+                v-for="step in selectedTaskSteps.values"
+                :key="step.sequence"
+              >
                 <el-input
                   placeholder="输入内容"
                   v-model="step.content"

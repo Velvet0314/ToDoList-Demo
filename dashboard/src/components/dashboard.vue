@@ -40,13 +40,11 @@ onMounted(() => {
   });
 });
 
-// 响应式布局
-
 const width = ref(window.innerWidth);
 
 const handleResize = () => {
   width.value = window.innerWidth;
-  isCollapse.value = window.innerWidth < 900;
+  isCollapse.value = window.innerWidth < 1024;
 };
 
 onMounted(() => {
@@ -58,74 +56,34 @@ onUnmounted(() => {
 });
 
 const showCard = computed(() => {
-  return width.value >= 768; // 当屏幕宽度大于或等于 768px 时显示
+  return width.value >= 1024; // 当屏幕宽度大于或等于 768px 时显示
 });
 
 // 日历
 const cardStyleC = computed(() => {
-  if (isCollapse.value) {
-    if (width.value < 600) return `${width.value - 100}px`;
-    else if (width.value < 768) return `${width.value - 150}px`;
-    else if (width.value < 1024) return "90%";
-    else return "80%";
-  } else {
-    if (width.value < 768)
-      return `${width.value * 0.6 * (width.value / 768)}px`;
-    else if (width.value < 1024) return "90%";
-    else return "80%";
-  }
+  return { width: width.value >= 1024 ? '100%' : '160%', marginRight: '20px' };
 });
 
 // 建议
 const cardStyleS = computed(() => {
-  if (isCollapse.value) {
-    if (width.value < 600) return `${width.value - 100}px`;
-    else if (width.value < 768) return `${width.value - 150}px`;
-    else if (width.value < 1024) return "90%";
-    else return "100%";
-  } else {
-    if (width.value < 768)
-      return `${width.value * 0.6 * (width.value / 768)}px`;
-    else if (width.value < 1024) return "90%";
-    else return "100%";
-  }
+  return { width: '100%', marginRight: '20px' };
 });
 
 // 数据分析
 const cardStyleD = computed(() => {
-  if (isCollapse.value) {
-    if (width.value < 600) return `${width.value - 100}px`;
-    else if (width.value < 768) return `${width.value - 150}px`;
-    else if (width.value < 1024) return "90%";
-    else return "100%";
-  } else {
-    if (width.value < 768)
-      return `${width.value * 0.6 * (width.value / 768)}px`;
-    else if (width.value < 1024) return "90%";
-    else return "100%";
-  }
+  return { width: width.value >= 1024 ? '100%' : '160%', marginRight: '20px' };
 });
 
 // 一言
 const cardStyleO = computed(() => {
-  if (isCollapse.value) {
-    if (width.value < 600) return `${width.value - 100}px`;
-    else if (width.value < 768) return `${width.value - 150}px`;
-    else if (width.value < 1024) return "90%";
-    else return "73%";
-  } else {
-    if (width.value < 768)
-      return `${width.value * 0.6 * (width.value / 768)}px`;
-    else if (width.value < 1024) return "90%";
-    else return "73%";
-  }
+  return { width: '100%', marginRight: '20px' };
 });
 </script>
 
 <template>
-  <el-row :gutter="30" :span="16">
-    <el-col :span="16">
-      <el-card :style="{ width: cardStyleC }" class="calendar">
+  <el-row :gutter="30">
+    <el-col :span="15">
+      <el-card :style="cardStyleC" class="calendar">
         <div class="main-title">我的一天</div>
         <el-calendar>
           <template #date-cell="{ data }">
@@ -138,13 +96,8 @@ const cardStyleO = computed(() => {
       </el-card>
     </el-col>
 
-    <el-col :span="8">
-      <el-card
-        v-if="showCard"
-        class="suggestion"
-        :style="{ width: cardStyleS }"
-        :collapse="isCollapse"
-      >
+    <el-col :span="9">
+      <el-card v-if="showCard" class="suggestion" :style="cardStyleS" :collapse="isCollapse">
         <template #header>
           <div class="card-header">
             <span>建议</span>
@@ -171,12 +124,8 @@ const cardStyleO = computed(() => {
   </el-row>
 
   <el-row :gutter="30">
-    <el-col :span="12">
-      <el-card
-        class="data-stat"
-        :style="{ width: cardStyleD }"
-        :collapse="isCollapse"
-      >
+    <el-col :span="15">
+      <el-card class="data-stat" :style="cardStyleD" :collapse="isCollapse">
         <div class="stat-content">
           <div class="stat-title">数据统计</div>
           <el-progress :percentage="50" />
@@ -188,14 +137,9 @@ const cardStyleO = computed(() => {
       </el-card>
     </el-col>
 
-    <el-col :span="12">
-      <el-card
-        v-if="showCard"
-        class="hitokoto-part"
-        :class="isCollapse ? 'hitokoto-collapsed' : 'hitokoto-expanded'"
-        :collapse="isCollapse"
-        :style="{ width: cardStyleO }"
-      >
+    <el-col :span="9">
+      <el-card v-if="showCard" class="hitokoto-part" :class="isCollapse ? 'hitokoto-collapsed' : 'hitokoto-expanded'"
+        :collapse="isCollapse" :style="cardStyleO">
         <div id="hitokoto-title">一言</div>
         <div id="hitokoto-text">
           <a :href="hitokotoUrl">{{ hitokotoText }}</a>
@@ -209,13 +153,8 @@ const cardStyleO = computed(() => {
 
   <!-- 小页面时在下方展示 -->
   <el-row :gutter="30" :span="16">
-    <el-col :span="8">
-      <el-card
-        v-if="!showCard"
-        class="suggestion1"
-        :style="{ width: cardStyleS }"
-        :collapse="isCollapse"
-      >
+    <el-col :span="23" :style="{ marginRight: 'auto' }">
+      <el-card v-if="!showCard" class="suggestion1" :style="cardStyleS" :collapse="isCollapse">
         <template #header>
           <div class="card-header">
             <span>建议</span>
@@ -243,14 +182,9 @@ const cardStyleO = computed(() => {
 
   <!-- 小页面时在下方展示 -->
   <el-row>
-    <el-col :span="12">
-      <el-card
-        v-if="!showCard"
-        class="hitokoto-part"
-        :class="isCollapse ? 'hitokoto-collapsed1' : 'hitokoto-expanded1'"
-        :collapse="isCollapse"
-        :style="{ width: cardStyleO }"
-      >
+    <el-col :span="23">
+      <el-card v-if="!showCard" class="hitokoto-part" :class="isCollapse ? 'hitokoto-collapsed1' : 'hitokoto-expanded1'"
+        :collapse="isCollapse" :style="cardStyleO">
         <div id="hitokoto-title">一言</div>
         <div id="hitokoto-text">
           <a :href="hitokotoUrl">{{ hitokotoText }}</a>
@@ -304,21 +238,7 @@ const cardStyleO = computed(() => {
   width: 100%;
 }
 
-.is-selected {
-  color: #1989fa;
-}
-
-.collapse-btn {
-  border: none;
-  margin: 10px 0 0 8px;
-  position: relative;
-}
-
-.el-aside {
-  transition: width 0.3s ease;
-}
-
-.el-calendar-day > p {
+.el-calendar-day>p {
   font-size: 13px;
 }
 
@@ -351,45 +271,54 @@ const cardStyleO = computed(() => {
 }
 
 .calendar {
-  margin: 0px auto 0 30px;
-  height: 470px;
+  margin-bottom: 30px;
+  margin-right: 100px;
+  height: 550px;
 }
 
 .suggestion {
-  margin: 0px auto;
-  height: 470px;
+  margin-bottom: 30px;
+  margin-right: 100px;
+  height: 550px;
 }
 
 .data-stat {
-  margin: 15px auto 0 30px;
+  margin-bottom: 30px;
+  margin-right: 100px;
   /* 增加上边距 */
   height: 250px;
 }
 
 .hitokoto-expanded {
-  margin: 15px 0 0 auto;
+  margin-bottom: 30px;
+  margin-right: 100px;
   /* 增加上边距 */
   height: 250px;
 }
 
 .hitokoto-collapsed {
-  margin: 15px 0 0 auto;
+  margin-bottom: 30px;
+  margin-right: 100px;
   /* 增加上边距 */
   height: 250px;
 }
+
 /* 缩小时重新生成的格式 */
 .suggestion1 {
-  margin: 50px 0 0 30px;
+  margin-bottom: 30px;
+  margin-right: 100px;
   height: 450px;
 }
+
 .hitokoto-expanded1 {
-  margin: 50px 0 0 30px;
+  margin-bottom: 30px;
+  margin-right: 100px;
   /* 增加上边距 */
   height: 250px;
 }
 
 .hitokoto-collapsed1 {
-  margin: 50px 0 0 30px;
+  margin-bottom: 30px;
   /* 增加上边距 */
   height: 250px;
 }
@@ -412,14 +341,10 @@ const cardStyleO = computed(() => {
 
 .stat-content .el-progress--line {
   margin-bottom: 15px;
-  max-width: 600px;
+  
 }
 
 :deep(.el-calendar-table .el-calendar-day) {
   height: 55px;
-}
-
-.animate__animated.animate__fadeInDown {
-  --animate-duration: 2s;
 }
 </style>

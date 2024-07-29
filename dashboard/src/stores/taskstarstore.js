@@ -8,7 +8,7 @@ export const useTaskStarStore = defineStore("task", {
   actions: {
     toggleStar(taskId) {
       if (!this.tasks.includes(taskId)) {
-        this.tasks.push(newTask);
+        this.tasks.push(taskId);
         this.stars[taskId] = false;
       }
       this.stars[taskId] = !this.stars[taskId];

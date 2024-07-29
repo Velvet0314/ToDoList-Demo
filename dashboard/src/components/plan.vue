@@ -9,19 +9,25 @@ import {
   More,
 } from "@element-plus/icons-vue";
 import { ref, reactive, onMounted, inject, onUnmounted, computed } from "vue";
-import { useLayoutStore } from "~/stores/layoutstore";
+import { ElDropdown, ElDropdownMenu, ElDropdownItem } from "element-plus";
+import { ElLoading } from "element-plus";
 import { storeToRefs } from "pinia";
+
+import { useLayoutStore } from "~/stores/layoutstore";
 import { useTokenStore } from "~/stores/tokenstore";
 import { useStepsStore } from "~/stores/stepstore";
+import { useTaskCheckStore } from "~/stores/taskcheckstore";
 import { useTaskStarStore } from "~/stores/taskstarstore";
-import { ElDropdown, ElDropdownMenu, ElDropdownItem } from "element-plus";
+import { useTaskSelectStore } from "~/stores/taskselectstore";
 
 const axios = inject("axios");
 const store = useLayoutStore();
 const stepsStore = useStepsStore();
 const taskStarStore = useTaskStarStore();
+const taskCheckStore = useTaskCheckStore();
+const taskSelectStore = useTaskSelectStore();
 const { isCollapse } = storeToRefs(store);
-const input = ref("");
+const inputSearch = ref("");
 const tasksList = reactive([]);
 
 // 页面大小小于一定大小时自动收缩侧边栏
@@ -101,7 +107,6 @@ const kindChoose = (kind) => {
 
   const tokenStore = useTokenStore();
   const token = tokenStore.token;
-
   switch (kind) {
     case 1:
       {
@@ -119,6 +124,7 @@ const kindChoose = (kind) => {
             for (let i = 0; i < taskArray.length; i++) {
               tasksList.push(taskArray[i]);
             }
+            taskSelectStore.setKind(1);
           });
       }
       break;
@@ -140,6 +146,7 @@ const kindChoose = (kind) => {
             for (let i = 0; i < taskArray.length; i++) {
               tasksList.push(taskArray[i]);
             }
+            taskSelectStore.setKind(2);
           });
       }
       break;
@@ -161,6 +168,7 @@ const kindChoose = (kind) => {
             for (let i = 0; i < taskArray.length; i++) {
               tasksList.push(taskArray[i]);
             }
+            taskSelectStore.setKind(3);
           });
       }
       break;
@@ -182,6 +190,7 @@ const kindChoose = (kind) => {
             for (let i = 0; i < taskArray.length; i++) {
               tasksList.push(taskArray[i]);
             }
+            taskSelectStore.setKind(4);
           });
       }
       break;
@@ -203,6 +212,7 @@ const kindChoose = (kind) => {
             for (let i = 0; i < taskArray.length; i++) {
               tasksList.push(taskArray[i]);
             }
+            taskSelectStore.setKind(5);
           });
       }
       break;
@@ -211,36 +221,6 @@ const kindChoose = (kind) => {
       }
       break;
   }
-};
-
-const getAllTodayTask = async () => {
-  const tokenStore = useTokenStore(); // 确保获取最新的 token
-  const token = tokenStore.token;
-
-  axios
-    .get("/task/getTodayTask", {
-      headers: {
-        Authorization: token,
-      },
-    })
-    .then((response) => {
-      console.log(response.data.info);
-      let taskArray = response.data.info;
-
-      // 清空当前任务列表，避免重复添加
-      tasksList.splice(0, tasksList.length);
-
-      // 填充任务列表
-      for (let i = 0; i < taskArray.length; i++) {
-        tasksList.push(taskArray[i]);
-      }
-
-      // 根据任务列表的内容决定是否显示详情卡片
-      showDetailCard.value = true;
-    })
-    .catch((error) => {
-      console.error("Failed to fetch today's tasks:", error);
-    });
 };
 
 const addNewTask = async () => {
@@ -316,21 +296,85 @@ const deleteTask = async (task, kind) => {
 
           case 2:
             {
+              axios
+                .get("/task/getAllTasks", {
+                  headers: {
+                    Authorization: token,
+                  },
+                })
+                .then((response) => {
+                  console.log(response.data.info);
+                  let taskArray = [];
+                  taskArray = response.data.info;
+                  tasksList.splice(0, tasksList.length);
+
+                  for (let i = 0; i < taskArray.length; i++) {
+                    tasksList.push(taskArray[i]);
+                  }
+                });
             }
             break;
 
           case 3:
             {
+              axios
+                .get("/task/getAllUnfinishedTasks", {
+                  headers: {
+                    Authorization: token,
+                  },
+                })
+                .then((response) => {
+                  console.log(response.data.info);
+                  let taskArray = [];
+                  taskArray = response.data.info;
+                  tasksList.splice(0, tasksList.length);
+
+                  for (let i = 0; i < taskArray.length; i++) {
+                    tasksList.push(taskArray[i]);
+                  }
+                });
             }
             break;
 
           case 4:
             {
+              axios
+                .get("/task/getAllFinishedTasks", {
+                  headers: {
+                    Authorization: token,
+                  },
+                })
+                .then((response) => {
+                  console.log(response.data.info);
+                  let taskArray = [];
+                  taskArray = response.data.info;
+                  tasksList.splice(0, tasksList.length);
+
+                  for (let i = 0; i < taskArray.length; i++) {
+                    tasksList.push(taskArray[i]);
+                  }
+                });
             }
             break;
 
           case 5:
             {
+              axios
+                .get("/task/getAllFavourTasks", {
+                  headers: {
+                    Authorization: token,
+                  },
+                })
+                .then((response) => {
+                  console.log(response.data.info);
+                  let taskArray = [];
+                  taskArray = response.data.info;
+                  tasksList.splice(0, tasksList.length);
+
+                  for (let i = 0; i < taskArray.length; i++) {
+                    tasksList.push(taskArray[i]);
+                  }
+                });
             }
             break;
           default:
@@ -536,6 +580,55 @@ const taskFavourOrNot = async (task) => {
     console.error("Failed to update task favour status:", error);
   }
 };
+
+const taskCompleteOrNot = async (task) => {
+  const tokenStore = useTokenStore();
+  const token = tokenStore.token;
+
+  try {
+    const response = await axios.put(
+      `/task/finishTask?task_id=${encodeURIComponent(task.id)}`,
+      {},
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    selectedTaskSteps.values = response.data.info;
+    console.log(selectedTaskSteps.values);
+  } catch (error) {
+    console.error("Failed to update task favour status:", error);
+  }
+};
+
+const taskSearch = async (text) => {
+  const tokenStore = useTokenStore();
+  const token = tokenStore.token;
+  console.log(text);
+  try {
+    axios
+      .post(
+        "/task/search",
+        { taskName: text },
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      )
+      .then((response) => {
+        console.log(response.data.info);
+        let taskArray = [];
+        taskArray = response.data.info;
+        tasksList.splice(0, tasksList.length);
+
+        for (let i = 0; i < taskArray.length; i++) {
+          tasksList.push(taskArray[i]);
+        }
+      });
+  } catch (error) {}
+};
 </script>
 
 <template>
@@ -549,9 +642,10 @@ const taskFavourOrNot = async (task) => {
           <el-collapse v-model="activeNames" @change="handleChange">
             <div class="input-button-wrapper">
               <el-input
-                v-model="input"
+                v-model="inputSearch"
                 :style="{ width: inputStyle }"
                 placeholder="请输入"
+                @keyup.enter="taskSearch(inputSearch)"
               >
                 <template #prefix>
                   <el-icon class="el-input__icon">
@@ -657,7 +751,7 @@ const taskFavourOrNot = async (task) => {
                     >
                     <el-dropdown-item
                       divided
-                      @click.native="deleteTask(task, 1)"
+                      @click.native="deleteTask(task, taskSelectStore.kind)"
                       >删除任务</el-dropdown-item
                     >
                   </el-dropdown-menu>
@@ -688,34 +782,43 @@ const taskFavourOrNot = async (task) => {
                   style="font-size: 18px"
                   class="editable-title my-10"
                 >
-                <template #prefix>
+                  <template #prefix>
                     <el-checkbox
+                      :model-value="taskCheckStore.taskStatus[selectedTask.id]"
+                      @update:model-value="
+                        (newStatus) =>
+                          taskCheckStore.setTaskStatus(
+                            selectedTask.id,
+                            newStatus
+                          )
+                      "
+                      @change="taskCompleteOrNot(selectedTask)"
                       size="large"
                     />
                   </template>
                 </el-input>
-                  <el-icon
-                    @click.stop="taskFavourOrNot(selectedTask)"
-                    :style="{
-                      cursor: 'pointer',
-                      border: 'none',
-                      boxShadow: 'none',
-                      padding: '0',
-                      width: '28px',
-                      height: '28px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }"
-                    class="star-icon"
-                  >
-                    <template v-if="taskStarStore.stars[selectedTask.id]">
-                      <StarFilled style="color: gold" />
-                    </template>
-                    <template v-else>
-                      <Star style="width: 18px; height: 18px" />
-                    </template>
-                  </el-icon>
+                <el-icon
+                  @click.stop="taskFavourOrNot(selectedTask)"
+                  :style="{
+                    cursor: 'pointer',
+                    border: 'none',
+                    boxShadow: 'none',
+                    padding: '0',
+                    width: '28px',
+                    height: '28px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }"
+                  class="star-icon"
+                >
+                  <template v-if="taskStarStore.stars[selectedTask.id]">
+                    <StarFilled style="color: gold" />
+                  </template>
+                  <template v-else>
+                    <Star style="width: 18px; height: 18px" />
+                  </template>
+                </el-icon>
               </template>
               <div
                 v-for="step in selectedTaskSteps.values"

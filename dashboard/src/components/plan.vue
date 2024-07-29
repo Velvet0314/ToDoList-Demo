@@ -12,12 +12,14 @@ import { ref, reactive, onMounted, inject, onUnmounted, computed } from "vue";
 import { useLayoutStore } from "~/stores/layoutstore";
 import { storeToRefs } from "pinia";
 import { useTokenStore } from "~/stores/tokenstore";
+import { useStepsStore } from "~/stores/stepstore";
+import { useTaskStarStore } from "~/stores/taskstarstore";
 import { ElDropdown, ElDropdownMenu, ElDropdownItem } from "element-plus";
-
-const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
 
 const axios = inject("axios");
 const store = useLayoutStore();
+const stepsStore = useStepsStore();
+const taskStarStore = useTaskStarStore();
 const { isCollapse } = storeToRefs(store);
 const input = ref("");
 const tasksList = reactive([]);
@@ -26,9 +28,9 @@ const tasksList = reactive([]);
 const handleResize = () => {
   width.value = window.innerWidth;
   // 当宽度小于 900px 时，设置为收缩状态
-  if (width.value < 900) {
+  if (width.value < 950) {
     isCollapse.value = true;
-  } else if (width.value >= 900 && width.value <= 950) {
+  } else if (width.value >= 950 && width.value <= 1000) {
     isCollapse.value = false;
   }
 };
@@ -48,7 +50,7 @@ onUnmounted(() => {
 });
 
 const cardStyleList = computed(() => {
-  if (width.value < 900) {
+  if (width.value < 950) {
     return isCollapse.value ? "450%" : "200px"; // 收缩时宽度为 500px，展开时为 100%
   }
   if (!showDetailCard.value && !showEditCard.value) {
@@ -78,6 +80,11 @@ const cardStyleEdit = computed(() => {
   } else {
     return "100%";
   }
+});
+
+const cardStyleTask = computed(() => {
+  if (!showDetailCard.value && !showEditCard.value) return "0px";
+  else return "100%";
 });
 
 const inputStyle = computed(() => {
@@ -236,8 +243,6 @@ const getAllTodayTask = async () => {
     });
 };
 
-const getAllTask = () => {};
-
 const addNewTask = async () => {
   tasksList.splice(0, tasksList.length);
   // 获取token,通过验证
@@ -271,7 +276,7 @@ const addNewTask = async () => {
   } catch (error) {}
 };
 
-const deteleTask = async (task, kind = kind) => {
+const deleteTask = async (task, kind) => {
   const tokenStore = useTokenStore();
   const token = tokenStore.token;
   console.log(token);
@@ -340,7 +345,7 @@ const deteleTask = async (task, kind = kind) => {
 };
 
 const selectedTask = ref(null); // 选中的任务
-const selectedTaskSteps = reactive([]); // 选中的任务
+const selectedTaskSteps = reactive([]); // 选中的任务的所有步骤
 
 const taskDetail = async (task) => {
   showEditCard.value = true; // 显示编辑界面
@@ -490,6 +495,47 @@ const deleteStep = async (step) => {
       });
   } catch (error) {}
 };
+
+const stepCompletedOrNot = async (step) => {
+  const tokenStore = useTokenStore();
+  const token = tokenStore.token;
+  try {
+    const response = await axios.put(
+      `/step/finishStep?step_id=${encodeURIComponent(step.id)}`,
+      {},
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    selectedTaskSteps.values = response.data.info;
+    console.log(selectedTaskSteps.values);
+  } catch (error) {
+    console.error("Failed to update step status:", error);
+  }
+};
+
+const taskFavourOrNot = async (task) => {
+  const tokenStore = useTokenStore();
+  const token = tokenStore.token;
+
+  try {
+    const response = await axios.put(
+      `/task/favourTask?task_id=${encodeURIComponent(task.id)}`,
+      {},
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+    console.log(response.data);
+    taskStarStore.toggleStar(task.id);
+  } catch (error) {
+    console.error("Failed to update task favour status:", error);
+  }
+};
 </script>
 
 <template>
@@ -506,7 +552,13 @@ const deleteStep = async (step) => {
                 v-model="input"
                 :style="{ width: inputStyle }"
                 placeholder="请输入"
-              />
+              >
+                <template #prefix>
+                  <el-icon class="el-input__icon">
+                    <search />
+                  </el-icon>
+                </template>
+              </el-input>
             </div>
             <div class="cards-wrapper">
               <el-card class="task-card cursor-pointer" shadow="hover">
@@ -550,24 +602,68 @@ const deleteStep = async (step) => {
         </div>
         <el-scrollbar style="max-height: 86vh; overflow-y: auto">
           <div
-            class="my-10 task-item"
+            class="my-10 task-item w-[100%]"
             v-for="task in tasksList"
             :key="task.id"
           >
-            <el-dropdown trigger="contextmenu" placement="bottom-start">
-              <div class="w-[100%]" @click="taskDetail(task)">
-                {{ task.task_name }}
-              </div>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item>标记为重要</el-dropdown-item>
-                  <el-dropdown-item>标记为已完成</el-dropdown-item>
-                  <el-dropdown-item divided @click.native="deteleTask(task)">
-                    删除任务
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+            <div style="display: flex; align-items: center">
+              <el-dropdown
+                trigger="contextmenu"
+                placement="bottom-start"
+                class="w-[100%]"
+              >
+                <template #default>
+                  <el-card
+                    class="task-card"
+                    :style="{ width: cardStyleTask, height: '100%' }"
+                    @click="taskDetail(task)"
+                    shadow="hover"
+                  >
+                    <div style="font-size: 16px">
+                      {{ task.task_name }}
+                    </div>
+                  </el-card>
+                </template>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item @click.native="markAsImportant(task)"
+                      >标记为重要</el-dropdown-item
+                    >
+                    <el-dropdown-item @click.native="markAsCompleted(task)"
+                      >标记为已完成</el-dropdown-item
+                    >
+                    <el-dropdown-item
+                      divided
+                      @click.native="deleteTask(task, 1)"
+                      >删除任务</el-dropdown-item
+                    >
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+              <el-dropdown
+                trigger="click"
+                placement="bottom-end"
+                class="w-auto"
+              >
+                <el-button
+                  type="text"
+                  icon="MoreFilled"
+                  style="border: none; box-shadow: none; margin-left: 10px"
+                ></el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item @click.native="markAsCompleted(task)"
+                      >标记为已完成</el-dropdown-item
+                    >
+                    <el-dropdown-item
+                      divided
+                      @click.native="deleteTask(task, 1)"
+                      >删除任务</el-dropdown-item
+                    >
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
           </div>
         </el-scrollbar>
       </el-card>
@@ -588,10 +684,38 @@ const deleteStep = async (step) => {
                 <el-input
                   placeholder="输入标题"
                   v-model="selectedTask.task_name"
-                  @blur="saveTaskName"
-                  size="small"
+                  @input="saveTaskName"
+                  style="font-size: 18px"
                   class="editable-title my-10"
-                />
+                >
+                <template #prefix>
+                    <el-checkbox
+                      size="large"
+                    />
+                  </template>
+                </el-input>
+                  <el-icon
+                    @click.stop="taskFavourOrNot(selectedTask)"
+                    :style="{
+                      cursor: 'pointer',
+                      border: 'none',
+                      boxShadow: 'none',
+                      padding: '0',
+                      width: '28px',
+                      height: '28px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }"
+                    class="star-icon"
+                  >
+                    <template v-if="taskStarStore.stars[selectedTask.id]">
+                      <StarFilled style="color: gold" />
+                    </template>
+                    <template v-else>
+                      <Star style="width: 18px; height: 18px" />
+                    </template>
+                  </el-icon>
               </template>
               <div
                 v-for="step in selectedTaskSteps.values"
@@ -600,8 +724,19 @@ const deleteStep = async (step) => {
                 <el-input
                   placeholder="输入内容"
                   v-model="step.content"
-                  @blur="saveSteps"
+                  @input="saveSteps"
                 >
+                  <template #prefix>
+                    <el-checkbox
+                      :model-value="stepsStore.stepsStatus[step.id]"
+                      @update:model-value="
+                        (newStatus) =>
+                          stepsStore.setStepStatus(step.id, newStatus)
+                      "
+                      size="large"
+                      @change="stepCompletedOrNot(step)"
+                    />
+                  </template>
                   <template #append>
                     <el-dropdown placement="bottom-end">
                       <el-button
@@ -627,7 +762,12 @@ const deleteStep = async (step) => {
                   </template>
                 </el-input>
               </div>
-              <el-button type="primary" @click="addNewStep">下一步</el-button>
+              <el-button
+                @click="addNewStep"
+                style="margin-top: 10%; border: none"
+                ><el-icon> <Plus /> </el-icon
+                ><span style="margin-left: 8px">下一步</span></el-button
+              >
             </el-collapse-item>
           </el-collapse>
         </el-scrollbar>
@@ -640,10 +780,12 @@ const deleteStep = async (step) => {
 :deep(.el-input-group__append) {
   padding: 0;
 }
+
 .step-wrapper {
   display: flex;
   align-items: center;
-  gap: 10px; /* 根据需要调整间隔 */
+  gap: 10px;
+  /* 根据需要调整间隔 */
 }
 
 .step-options-button {
@@ -658,12 +800,7 @@ const deleteStep = async (step) => {
   transition: background-color 0.3s;
   /* 平滑过渡效果 */
   cursor: pointer;
-}
-
-.task-item:hover {
-  background-color: #cccccc;
-  /* 悬浮时的背景颜色 */
-  cursor: pointer;
+  margin-bottom: 5px;
 }
 
 .full-height {
@@ -702,6 +839,7 @@ const deleteStep = async (step) => {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  margin-bottom: 18px;
   /* 调整按钮之间的间距 */
 }
 
@@ -713,28 +851,42 @@ const deleteStep = async (step) => {
   text-align: right;
   /* 使内容靠右对齐 */
 }
+
 .input-button-wrapper {
-  margin-bottom: 20px; /* 设置输入框和卡片之间的间隔 */
+  margin-bottom: 20px;
+  /* 设置输入框和卡片之间的间隔 */
 }
 
 .cards-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 20px; /* 设置卡片之间的间隔 */
+  gap: 20px;
+  /* 设置卡片之间的间隔 */
 }
 
 .task-card {
-  height: 60px; /* 设置每个卡片的高度 */
-  backdrop-filter: blur(5px); /* 添加背景虚化效果 */
-  background-color: rgba(
-    255,
-    255,
-    255,
-    0.5
-  ); /* 需要设置背景颜色，并带有透明度 */
-  border: 1px solid rgba(255, 255, 255, 0.3); /* 可选，增加一个边框使效果更明显 */
+  height: 60px;
+  /* 设置每个卡片的高度 */
+  backdrop-filter: blur(5px);
+  /* 添加背景虚化效果 */
+  background-color: rgba(255, 255, 255, 0.5);
+  /* 需要设置背景颜色，并带有透明度 */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  /* 可选，增加一个边框使效果更明显 */
 }
+
 .task-card:hover {
-  background-color: #e4e7ed; /* 鼠标悬停时的背景颜色 */
+  background-color: #e4e7ed;
+  /* 鼠标悬停时的背景颜色 */
+}
+
+.half-height {
+  height: 50%;
+}
+
+.star-icon {
+  font-size: 24px;
+  width: auto;
+  margin-right: 10px;
 }
 </style>

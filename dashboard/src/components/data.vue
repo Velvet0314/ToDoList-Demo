@@ -1,138 +1,238 @@
 <script setup>
-import { ref, reactive, onMounted, inject, onUnmounted, computed } from "vue";
+import { ref, reactive, onMounted, inject, onUnmounted, computed, } from "vue";
+import * as echarts from "echarts";
+
 import { useLayoutStore } from "~/stores/layoutstore";
 import { storeToRefs } from "pinia";
 
-const format = (percentage) => (percentage === 100 ? 'Full' : `${percentage}%`);
+import { ElDropdown, ElDropdownMenu, ElDropdownItem } from "element-plus";
 
-const axios = inject("axios");
-
-// 页面大小小于一定大小时自动收缩侧边栏
 const handleResize = () => {
   width.value = window.innerWidth;
-  isCollapse.value = window.innerWidth < 768;
+  isCollapse.value = window.innerWidth < 880;
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    window.location.reload();
+  }, 500);
 };
-
-const store = useLayoutStore();
-const { isCollapse } = storeToRefs(store);
-
-const width = ref(window.innerWidth);
 
 onMounted(() => {
   window.addEventListener('resize', handleResize);
+  initPie();
+  initPie1();
+  initBar();
+
+
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
-});
-
-
-const circleSize = computed(() => {
-  // if (isCollapse.value) {
-  //   if (width.value < 600) return `${width.value * 0.6 * (width.value / 768)}`;
-  //   else if (width.value < 768) return `${width.value * 0.6 * (width.value / 768)}`;
-  //   else if (width.value < 1024) return `${width.value * 0.6 * (width.value / 768)}`;
-  //   else return `${width.value * 0.6 * (width.value / 768)}`;
-  // } else {
-  //   if (width.value < 768) return `${width.value * 0.6 * (width.value / 768)}`;
-  //   else if (width.value < 1024) return `${width.value * 0.6 * (width.value / 768)}`;
-  //   else return `${width.value * 0.6 * (width.value / 768)}`;
-  // }
-  if (width.value < 600) return `${(width.value)/4}`;
-  else if (width.value < 768) return `${(width.value)/4.5}`;
-  else if (width.value < 1024) return `${(width.value)/4}`;
-  else return `${(width.value-800)/5 }`;
-});
-
-const StylePro = computed(() => {
-  if (isCollapse.value) {
-    if (width.value < 600) return `${width.value - 100}px`;
-    else if (width.value < 768) return `${width.value - 150}px`;
-    else if (width.value < 1024) return '90%';
-    else return '100%';
-  } else {
-    if (width.value < 768) return `${width.value * 0.6 * (width.value / 768)}px`;
-    else if (width.value < 1024) return '90%';
-    else return '100%';
+  if (chartContainer1.value) {
+    echarts.dispose(chartContainer1.value);
+  }
+  if (chartContainer2.value) {
+    echarts.dispose(chartContainer2.value);
+  }
+  if (chartContainer3.value) {
+    echarts.dispose(chartContainer3.value);
   }
 });
+
+const format = (percentage) => (percentage === 100 ? 'Full' : `${percentage}%`);
+const axios = inject("axios");
+const store = useLayoutStore();
+const { isCollapse } = storeToRefs(store);
+const width = ref(window.innerWidth);
+const chartContainer1 = ref(null);
+const chartContainer2 = ref(null);
+const chartContainer3 = ref(null);
+const chartContainerHeatmap = ref(null);
+const data = [5, 20, 36, 10, 10, 10, 15]
+const total = data.reduce((acc, val) => acc + val, 0);
+// 柱状图颜色
+const getColorForValue = (value) => {
+  const percentage = (value / total) * 100;
+  if (percentage < 5) {
+    return '#c6e2ff'; // 蓝色
+  } else if (percentage < 10) {
+    return '#d1edc4'; // 青色
+  } else if (percentage < 15) {
+    return '#95d475'; // 绿色
+  } else if (percentage < 25) {
+    return '#eebe77'; // 黄色
+  } else if (percentage < 35) {
+    return '#f89898'; // 浅红色
+  } else {
+    return '#c45656'; //红色
+  }
+};
+const PieStyle = computed(() => {
+  if (width.value < 1260) return '200%';
+  else return '100%';
+});
+
+const showPie2 = computed(() => {
+  return width.value >= 1260; // 当屏幕宽度大于或等于 768px 时显示
+});
+
+const PieMargin = computed(() => {
+  if (!showPie2.value) {
+    if (isCollapse.value) return `${(width.value - 760) * 0.6}px`
+    return `${(width.value - 1000) * 0.6}px`;
+  }
+  return (width.value > 1400 || width.value < 1260) ? '0px' : `${width.value - 1400}px`;
+});
+// 初始化第一个饼状图
+// 已完成的任务数,未完成任务数
+const initPie = () => {
+  const myPie = echarts.init(chartContainer1.value);
+  const option1 = {
+    title: {
+      text: '任务完成情况',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'item'
+    },
+    series: [
+      {
+        name: '任务分类',
+        type: 'pie',
+        radius: '50%',
+
+        data: [
+          { value: 150, name: '已完成任务' },
+          { value: 310, name: '未完成任务' },
+        ],
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }
+    ]
+  };
+
+  myPie.setOption(option1);
+};
+
+
+// 初始化第二个饼状图
+// 已完成步骤数,未完成步骤数
+const initPie1 = () => {
+  const myPie1 = echarts.init(chartContainer2.value);
+
+  const option2 = {
+    title: {
+      text: '饼图 2',
+      subtext: '数据来源于某处',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'item'
+    },
+
+    series: [
+      {
+        name: '任务分类',
+        type: 'pie',
+        radius: '50%',
+        data: [
+          { value: 200, name: '已完成任务' },
+          { value: 150, name: '未完成任务' },
+        ],
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }
+    ]
+  };
+
+  myPie1.setOption(option2);
+};
+
+// 柱状图
+// 返回一周中每个日期的任务数量
+const initBar = () => {
+  const myChart = echarts.init(chartContainer3.value);
+
+  const option = {
+    title: {
+      text: '周任务数量峰值总览'
+    },
+    tooltip: {},
+    xAxis: {
+      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    },
+    yAxis: {},
+    series: [{
+      name: '任务数量',
+      type: 'bar',
+      data: data.map(value => ({
+        value,
+        itemStyle: { color: getColorForValue(value) }
+      }))
+    }]
+  };
+
+  myChart.setOption(option);
+};
+
 </script>
 
 <template>
-   <el-row>
-    <el-col :span="6">
-      <el-statistic title="Daily active users" :value="268500" />
-    </el-col>
-    <el-col :span="6">
-      <el-statistic :value="138">
-        <template #title>
-          <div style="display: inline-flex; align-items: center">
-            Ratio of men to women
-            <el-icon style="margin-left: 4px" :size="12">
-              <Male />
-            </el-icon>
-          </div>
-        </template>
-        <template #suffix>/100</template>
-      </el-statistic>
-    </el-col>
-    <el-col :span="6">
-      <el-statistic title="Total Transactions" :value="outputValue" />
-    </el-col>
-    <el-col :span="6">
-      <el-statistic title="Feedback number" :value="562">
-        <template #suffix>
-          <el-icon style="vertical-align: -0.125em">
-            <ChatLineRound />
-          </el-icon>
-        </template>
-      </el-statistic>
-    </el-col>
-  </el-row>
-  <el-row :gutter="30" :span="24" class="row-spacing">
-    <el-col >
-      <div v-if="1" class="demo-progress" :style="{ width: StylePro }">
-        <el-progress v-if="1" type="circle" :percentage="0" :width="circleSize"/>
-        <el-progress v-if="1" type="circle" :percentage="25" :width="circleSize"/>
-        <el-progress v-if="1" type="circle" :percentage="100" status="success" :width="circleSize"/>
-        <el-progress v-if="1" type="circle" :percentage="70" status="warning" :width="circleSize"/>
-        <el-progress v-if="1" type="circle" :percentage="50" status="exception" :width="circleSize"/>
-      </div>
-    </el-col>
-  </el-row>
-  <el-row :gutter="30" :span="24" class="row-spacing">
-    <el-col :span="12">
-      <div v-if="1" class="demo-progress">
-        <el-progress class="progress-bar" :percentage="50" :indeterminate="true" />
-        <el-progress class="progress-bar" :percentage="100" :format="format" :indeterminate="true" />
-        <el-progress class="progress-bar" :percentage="100" status="success" :indeterminate="true" :duration="5" />
-        <el-progress class="progress-bar" :percentage="100" status="warning" :indeterminate="true" :duration="1" />
-        <el-progress class="progress-bar" :percentage="50" status="exception" :indeterminate="true" />
-      </div>
-    </el-col>
-  </el-row>
+  <div class="charts-container">
+    <el-row :gutter="20">
+      <el-col :span="12" style="margin-bottom: 20px;">
+        <el-card :style="{ width: PieStyle }">
+          <div ref="chartContainer1" class="chart" :style="{ marginLeft: PieMargin }"></div>
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card v-if=showPie2>
+          <div ref="chartContainer2" class="chart" :style="{ marginLeft: PieMargin }"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+    <el-row :gutter="20">
+      <el-col :span="12">
+        <el-card v-if=!showPie2 :style="{ width: PieStyle }">
+          <div ref="chartContainer2" class="chart" :style="{ marginLeft: PieMargin }"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-row :gutter="20" style="margin-top: 20px;">
+      <el-col :span="24">
+        <el-card>
+          <div ref="chartContainer3" class="chart" style="width: 100%; height: 400px;"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+  </div>
+
 </template>
 
 <style scoped>
-.demo-progress {
- 
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
+.charts-container {
   width: 100%;
 }
 
-.demo-progress .el-progress--circle {
-  margin: 50px;
-  width: 150px; /* 调整这个值以改变圆形进度条的大小 */
-  height: 150px; /* 调整这个值以改变圆形进度条的大小 */
+.chart {
+  width: 100%;
+  height: 400px;
 }
 
-.demo-progress .progress-bar {
-  margin-bottom: 20px; /* 调整这个值以改变条形进度条之间的间距 */
-}
-
-.row-spacing {
-  margin-bottom: 50px; /* 调整这个值以设置行之间的间距 */
+@media (max-width: 2000px) {
+  .responsive-col {
+    width: 100%;
+    display: block;
+  }
 }
 </style>

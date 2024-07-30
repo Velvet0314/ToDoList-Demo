@@ -81,121 +81,127 @@ const cardStyleO = computed(() => {
 </script>
 
 <template>
-  <el-row :gutter="30">
-    <el-col :span="15">
-      <el-card :style="cardStyleC" class="calendar">
-        <div class="main-title">我的一天</div>
-        <el-calendar>
-          <template #date-cell="{ data }">
-            <p :class="data.isSelected ? 'is-selected' : ''">
-              {{ data.day.split("-").slice(2).join("-") }}
-              {{ data.isSelected ? "✔️" : "" }}
-            </p>
-          </template>
-        </el-calendar>
-      </el-card>
-    </el-col>
+  <transition name="custom-animations">
+    <div class="animate__animated animate__bounceInLeft">
+      <el-row :gutter="30">
+        <el-col :span="15">
+          <el-card :style="cardStyleC" class="calendar">
+            <div class="main-title">我的一天</div>
+            <el-calendar>
+              <template #date-cell="{ data }">
+                <p :class="data.isSelected ? 'is-selected' : ''">
+                  {{ data.day.split("-").slice(2).join("-") }}
+                  {{ data.isSelected ? "✔️" : "" }}
+                </p>
+              </template>
+            </el-calendar>
+          </el-card>
+        </el-col>
 
-    <el-col :span="9">
-      <el-card v-if="showCard" class="suggestion" :style="cardStyleS" :collapse="isCollapse">
-        <template #header>
-          <div class="card-header">
-            <span>建议</span>
-          </div>
-        </template>
-        <div>
-          <el-collapse v-model="activeNames" @change="handleChange">
-            <el-collapse-item title="Consistency" name="1">
-              <div>1</div>
-            </el-collapse-item>
-            <el-collapse-item title="Feedback" name="2">
-              <div>2</div>
-            </el-collapse-item>
-            <el-collapse-item title="Efficiency" name="3">
-              <div>3</div>
-            </el-collapse-item>
-            <el-collapse-item title="Controllability" name="4">
-              <div>4</div>
-            </el-collapse-item>
-          </el-collapse>
-        </div>
-      </el-card>
-    </el-col>
-  </el-row>
+        <el-col :span="9">
+          <el-card v-if="showCard" class="suggestion" :style="cardStyleS" :collapse="isCollapse">
+            <template #header>
+              <div class="card-header">
+                <span>建议</span>
+              </div>
+            </template>
+            <div>
+              <el-collapse v-model="activeNames" @change="handleChange">
+                <el-collapse-item title="Consistency" name="1">
+                  <div>1</div>
+                </el-collapse-item>
+                <el-collapse-item title="Feedback" name="2">
+                  <div>2</div>
+                </el-collapse-item>
+                <el-collapse-item title="Efficiency" name="3">
+                  <div>3</div>
+                </el-collapse-item>
+                <el-collapse-item title="Controllability" name="4">
+                  <div>4</div>
+                </el-collapse-item>
+              </el-collapse>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
 
-  <el-row :gutter="30">
-    <el-col :span="15">
-      <el-card class="data-stat" :style="cardStyleD" :collapse="isCollapse">
-        <div class="stat-content">
-          <div class="stat-title">数据统计</div>
-          <el-progress :percentage="50" />
-          <el-progress :percentage="100" :format="format" />
-          <el-progress :percentage="100" status="success" />
-          <el-progress :percentage="100" status="warning" />
-          <el-progress :percentage="50" status="exception" />
-        </div>
-      </el-card>
-    </el-col>
+      <el-row :gutter="30">
+        <el-col :span="15">
+          <el-card class="data-stat" :style="cardStyleD" :collapse="isCollapse">
+            <div class="stat-content">
+              <div class="stat-title">数据统计</div>
+              <el-progress :percentage="50" />
+              <el-progress :percentage="100" :format="format" />
+              <el-progress :percentage="100" status="success" />
+              <el-progress :percentage="100" status="warning" />
+              <el-progress :percentage="50" status="exception" />
+            </div>
+          </el-card>
+        </el-col>
 
-    <el-col :span="9">
-      <el-card v-if="showCard" class="hitokoto-part" :class="isCollapse ? 'hitokoto-collapsed' : 'hitokoto-expanded'"
-        :collapse="isCollapse" :style="cardStyleO">
-        <div id="hitokoto-title">一言</div>
-        <div id="hitokoto-text">
-          <a :href="hitokotoUrl">{{ hitokotoText }}</a>
-        </div>
-        <div v-if="hitokotoFrom" id="hitokoto-from" class="flex flex-col">
-          ——&ensp;《{{ hitokotoFrom }}》
-        </div>
-      </el-card>
-    </el-col>
-  </el-row>
+        <el-col :span="9">
+          <el-card v-if="showCard" class="hitokoto-part"
+            :class="isCollapse ? 'hitokoto-collapsed' : 'hitokoto-expanded'" :collapse="isCollapse" :style="cardStyleO">
+            <div id="hitokoto-title">一言</div>
+            <div id="hitokoto-text">
+              <a :href="hitokotoUrl">{{ hitokotoText }}</a>
+            </div>
+            <div v-if="hitokotoFrom" id="hitokoto-from" class="flex flex-col">
+              ——&ensp;《{{ hitokotoFrom }}》
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
 
-  <!-- 小页面时在下方展示 -->
-  <el-row :gutter="30" :span="16">
-    <el-col :span="23" :style="{ marginRight: 'auto' }">
-      <el-card v-if="!showCard" class="suggestion1" :style="cardStyleS" :collapse="isCollapse">
-        <template #header>
-          <div class="card-header">
-            <span>建议</span>
-          </div>
-        </template>
-        <div>
-          <el-collapse v-model="activeNames" @change="handleChange">
-            <el-collapse-item title="Consistency" name="1">
-              <div>1</div>
-            </el-collapse-item>
-            <el-collapse-item title="Feedback" name="2">
-              <div>2</div>
-            </el-collapse-item>
-            <el-collapse-item title="Efficiency" name="3">
-              <div>3</div>
-            </el-collapse-item>
-            <el-collapse-item title="Controllability" name="4">
-              <div>4</div>
-            </el-collapse-item>
-          </el-collapse>
-        </div>
-      </el-card>
-    </el-col>
-  </el-row>
+      <!-- 小页面时在下方展示 -->
+      <el-row :gutter="30" :span="16">
+        <el-col :span="23" :style="{ marginRight: 'auto' }">
+          <el-card v-if="!showCard" class="suggestion1" :style="cardStyleS" :collapse="isCollapse">
+            <template #header>
+              <div class="card-header">
+                <span>建议</span>
+              </div>
+            </template>
+            <div>
+              <el-collapse v-model="activeNames" @change="handleChange">
+                <el-collapse-item title="Consistency" name="1">
+                  <div>1</div>
+                </el-collapse-item>
+                <el-collapse-item title="Feedback" name="2">
+                  <div>2</div>
+                </el-collapse-item>
+                <el-collapse-item title="Efficiency" name="3">
+                  <div>3</div>
+                </el-collapse-item>
+                <el-collapse-item title="Controllability" name="4">
+                  <div>4</div>
+                </el-collapse-item>
+              </el-collapse>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
 
-  <!-- 小页面时在下方展示 -->
-  <el-row>
-    <el-col :span="23">
-      <el-card v-if="!showCard" class="hitokoto-part" :class="isCollapse ? 'hitokoto-collapsed1' : 'hitokoto-expanded1'"
-        :collapse="isCollapse" :style="cardStyleO">
-        <div id="hitokoto-title">一言</div>
-        <div id="hitokoto-text">
-          <a :href="hitokotoUrl">{{ hitokotoText }}</a>
-        </div>
-        <div v-if="hitokotoFrom" id="hitokoto-from" class="flex flex-col">
-          ——&ensp;《{{ hitokotoFrom }}》
-        </div>
-      </el-card>
-    </el-col>
-  </el-row>
+      <!-- 小页面时在下方展示 -->
+      <el-row>
+        <el-col :span="23">
+          <el-card v-if="!showCard" class="hitokoto-part"
+            :class="isCollapse ? 'hitokoto-collapsed1' : 'hitokoto-expanded1'" :collapse="isCollapse"
+            :style="cardStyleO">
+            <div id="hitokoto-title">一言</div>
+            <div id="hitokoto-text">
+              <a :href="hitokotoUrl">{{ hitokotoText }}</a>
+            </div>
+            <div v-if="hitokotoFrom" id="hitokoto-from" class="flex flex-col">
+              ——&ensp;《{{ hitokotoFrom }}》
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
+  </transition>
 </template>
+
 
 <style scoped>
 .hitokoto-part {
@@ -209,12 +215,12 @@ const cardStyleO = computed(() => {
 
 #hitokoto-title {
   font-family: "hito-font";
-  font-size: 45px;
-  margin-top: -5%;
+  font-size: 300%;
+  margin-top: 0%;
   letter-spacing: -5px;
   position: absolute;
-  top: 12.5%;
-  left: 17.5%;
+  top: 7%;
+  left: 12.5%;
   transform: translateX(-50%);
 }
 
@@ -341,7 +347,7 @@ const cardStyleO = computed(() => {
 
 .stat-content .el-progress--line {
   margin-bottom: 15px;
-  
+
 }
 
 :deep(.el-calendar-table .el-calendar-day) {

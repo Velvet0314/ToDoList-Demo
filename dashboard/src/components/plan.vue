@@ -10,8 +10,8 @@ import {
 } from "@element-plus/icons-vue";
 import { ref, reactive, onMounted, inject, onUnmounted, computed } from "vue";
 import { ElDropdown, ElDropdownMenu, ElDropdownItem } from "element-plus";
-import { ElLoading } from "element-plus";
 import { storeToRefs } from "pinia";
+import { ElButton, ElPopover, ElDatePicker } from "element-plus";
 
 import { useLayoutStore } from "~/stores/layoutstore";
 import { useTokenStore } from "~/stores/tokenstore";
@@ -44,7 +44,7 @@ const handleResize = () => {
 const width = ref(window.innerWidth);
 
 const showCard = computed(() => {
-  return width.value >= 1024; // 当屏幕宽度大于或等于 800px 时显示
+  return width.value >= 950; // 当屏幕宽度大于或等于 800px 时显示
 });
 
 onMounted(() => {
@@ -57,7 +57,7 @@ onUnmounted(() => {
 
 const cardStyleList = computed(() => {
   if (width.value < 950) {
-    return isCollapse.value ? "450%" : "200px"; // 收缩时宽度为 500px，展开时为 100%
+    return "450%";
   }
   if (!showDetailCard.value && !showEditCard.value) {
     return "400%";
@@ -629,6 +629,61 @@ const taskSearch = async (text) => {
       });
   } catch (error) {}
 };
+
+const shortcuts = [
+  {
+    text: "今日",
+    value: new Date(),
+  },
+  {
+    text: "明日",
+    value: () => {
+      const date = new Date();
+      date.setDate(date.getDate() + 1);
+      return date;
+    },
+  },
+  {
+    text: "一周后",
+    value: () => {
+      const date = new Date();
+      date.setDate(date.getDate() + 7);
+      return date;
+    },
+  },
+];
+
+const setEndTime = async (task) => {
+  const tokenStore = useTokenStore();
+  const token = tokenStore.token;
+  await taskDetail(task);
+  try {
+    await axios
+      .put("/task/updateTask", task, {
+        headers: {
+          Authorization: token,
+        },
+      })
+      .then((response) => {
+        console.log(response.data);
+        if (!response.data.code) {
+          // 在本地任务列表中找到并更新任务
+          const index = tasksList.findIndex(
+            (task) => task.id === selectedTask.value.id
+          );
+          if (index !== -1) {
+            tasksList[index] = { ...tasksList[index], ...selectedTask.value };
+          }
+          console.log("Task updated successfully in the local list.");
+        } else {
+          console.error(
+            "Failed to update task on server: ",
+            response.data.message
+          );
+        }
+      });
+  } catch (error) {}
+};
 </script>
 
 <template>
@@ -636,7 +691,7 @@ const taskSearch = async (text) => {
     <el-col :span="6" class="full-height">
       <el-card
         :style="{ width: cardStyleList, height: '100%' }"
-        class="full-height"
+        class="full-height animate__animated animate__fadeInLeft"
       >
         <el-scrollbar class="content">
           <el-collapse v-model="activeNames" @change="handleChange">
@@ -644,7 +699,7 @@ const taskSearch = async (text) => {
               <el-input
                 v-model="inputSearch"
                 :style="{ width: inputStyle }"
-                placeholder="请输入"
+                placeholder="请输入任务名称"
                 @keyup.enter="taskSearch(inputSearch)"
               >
                 <template #prefix>
@@ -655,19 +710,34 @@ const taskSearch = async (text) => {
               </el-input>
             </div>
             <div class="cards-wrapper">
-              <el-card class="task-card cursor-pointer" shadow="hover">
+              <el-card
+                class="task-card cursor-pointer animate__animated animate__fadeInLeft"
+                shadow="hover"
+              >
                 <div @click="kindChoose(1)">我的一天</div>
               </el-card>
-              <el-card class="task-card cursor-pointer" shadow="hover">
+              <el-card
+                class="task-card cursor-pointer animate__animated animate__fadeInLeft"
+                shadow="hover"
+              >
                 <div @click="kindChoose(2)">全部</div>
               </el-card>
-              <el-card class="task-card cursor-pointer" shadow="hover">
+              <el-card
+                class="task-card cursor-pointer animate__animated animate__fadeInLeft"
+                shadow="hover"
+              >
                 <div @click="kindChoose(3)">未完成</div>
               </el-card>
-              <el-card class="task-card cursor-pointer" shadow="hover">
+              <el-card
+                class="task-card cursor-pointer animate__animated animate__fadeInLeft"
+                shadow="hover"
+              >
                 <div @click="kindChoose(4)">已完成</div>
               </el-card>
-              <el-card class="task-card cursor-pointer" shadow="hover">
+              <el-card
+                class="task-card cursor-pointer animate__animated animate__fadeInLeft"
+                shadow="hover"
+              >
                 <div @click="kindChoose(5)">重要</div>
               </el-card>
             </div>
@@ -681,6 +751,7 @@ const taskSearch = async (text) => {
       <el-card
         :style="{ width: cardStyleDetail, height: '100%' }"
         style="max-height: 88vh; overflow: hidden"
+        class="animate__animated animate__fadeInLeft"
       >
         <div class="button-wrapper">
           <el-button round @click="addNewTask"
@@ -696,44 +767,30 @@ const taskSearch = async (text) => {
         </div>
         <el-scrollbar style="max-height: 86vh; overflow-y: auto">
           <div
-            class="my-10 task-item w-[100%]"
+            class="my-10 task-item w-[100%] animate__animated animate__fadeInLeft"
             v-for="task in tasksList"
             :key="task.id"
           >
             <div style="display: flex; align-items: center">
-              <el-dropdown
-                trigger="contextmenu"
-                placement="bottom-start"
-                class="w-[100%]"
+              <el-card
+                class="task-card"
+                :style="{ width: cardStyleTask, height: '100%' }"
+                @click="taskDetail(task)"
+                shadow="hover"
               >
-                <template #default>
-                  <el-card
-                    class="task-card"
-                    :style="{ width: cardStyleTask, height: '100%' }"
-                    @click="taskDetail(task)"
-                    shadow="hover"
-                  >
-                    <div style="font-size: 16px">
-                      {{ task.task_name }}
-                    </div>
-                  </el-card>
-                </template>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item @click.native="markAsImportant(task)"
-                      >标记为重要</el-dropdown-item
-                    >
-                    <el-dropdown-item @click.native="markAsCompleted(task)"
-                      >标记为已完成</el-dropdown-item
-                    >
-                    <el-dropdown-item
-                      divided
-                      @click.native="deleteTask(task, 1)"
-                      >删除任务</el-dropdown-item
-                    >
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+                <div style="font-size: 16px">
+                  {{ task.task_name }}
+                </div>
+                <div class="flex">
+                  <el-date-picker
+                    v-model="task.end_time"
+                    type="date"
+                    placeholder="设置截止时间"
+                    :shortcuts="shortcuts"
+                    @change="setEndTime(task)"
+                  />
+                </div>
+              </el-card>
               <el-dropdown
                 trigger="click"
                 placement="bottom-end"
@@ -748,6 +805,9 @@ const taskSearch = async (text) => {
                   <el-dropdown-menu>
                     <el-dropdown-item @click.native="markAsCompleted(task)"
                       >标记为已完成</el-dropdown-item
+                    >
+                    <el-dropdown-item @click.native="markAsCompleted(task)"
+                      >标记为重要</el-dropdown-item
                     >
                     <el-dropdown-item
                       divided
@@ -765,7 +825,10 @@ const taskSearch = async (text) => {
 
     <!-- 新开的编辑页面 -->
     <el-col v-if="showCard && showEditCard" :span="10" class="full-height">
-      <el-card :style="{ width: cardStyleEdit }">
+      <el-card
+        :style="{ width: cardStyleEdit }"
+        class="animate__animated animate__fadeInLeft"
+      >
         <div class="button-wrapper">
           <el-button round @click="showEditCard = !showEditCard"
             ><el-icon> <CloseBold /> </el-icon

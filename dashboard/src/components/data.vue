@@ -244,7 +244,7 @@ const getTasksByWeek = async () => {
         console.log("Updated weekValue:", toRaw(weekValue));
         updateBarChart(); // 确保这里更新图表
       });
-  } catch (error) {}
+  } catch (error) { }
 };
 
 // 初始化源数据和输出动画数据
@@ -291,68 +291,62 @@ onMounted(async () => {
 </script>
 
 <template>
-  <el-card style="margin-bottom: 20px">
-    <el-row :gutter="20">
-      <el-col :span="6">
-        <el-card shadow="never" style="border: none">
-          <el-statistic title="总任务数" :value="outputAllTasks" />
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never" style="border: none">
-          <el-statistic title="任务完成数" :value="outputAllDoneTasks" />
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never" style="border: none">
-          <el-statistic title="总步骤数" :value="outputAllSteps" />
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="never" style="border: none">
-          <el-statistic title="步骤完成数" :value="outputAllDoneSteps" />
-        </el-card>
-      </el-col>
-    </el-row>
-  </el-card>
-  <div class="charts-container">
-    <el-row :gutter="20" style="margin-bottom: 20px">
-      <el-col :span="10">
-        <el-card :style="{ width: PieStyle, 'margin-right': 'auto' }">
-          <div ref="chartContainer1" class="chart"></div>
-        </el-card>
-      </el-col>
+  <div>
+    <el-card style="margin-bottom: 20px" class="animate__animated animate__fadeInDown">
+      <el-row :gutter="20">
+        <el-col :span="6">
+          <el-card shadow="never" style="border: none" class="animate__animated animate__fadeInDown">
+            <el-statistic title="总任务数" :value="outputAllTasks" />
+          </el-card>
+        </el-col>
+        <el-col :span="6">
+          <el-card shadow="never" style="border: none" class="animate__animated animate__fadeInDown">
+            <el-statistic title="任务完成数" :value="outputAllDoneTasks" />
+          </el-card>
+        </el-col>
+        <el-col :span="6">
+          <el-card shadow="never" style="border: none" class="animate__animated animate__fadeInDown">
+            <el-statistic title="总步骤数" :value="outputAllSteps" />
+          </el-card>
+        </el-col>
+        <el-col :span="6">
+          <el-card shadow="never" style="border: none" class="animate__animated animate__fadeInDown">
+            <el-statistic title="步骤完成数" :value="outputAllDoneSteps" />
+          </el-card>
+        </el-col>
+      </el-row>
+    </el-card>
+    <div class="charts-container">
+      <el-row :gutter="20" style="margin-bottom: 20px">
+        <el-col :span="10">
+          <el-card :style="{ width: PieStyle, 'margin-right': 'auto' }" class="animate__animated animate__fadeInDown">
+            <div ref="chartContainer1" class="chart"></div>
+          </el-card>
+        </el-col>
 
-      <el-col v-show="showCard" :span="14">
-        <el-card>
-          <div ref="chartContainer2" class="chart"></div>
-        </el-card>
-      </el-col>
-    </el-row>
+        <el-col v-show="showCard" :span="14">
+          <el-card class="animate__animated animate__fadeInDown">
+            <div ref="chartContainer2" class="chart"></div>
+          </el-card>
+        </el-col>
+      </el-row>
 
-    <el-row :gutter="20" style="margin-bottom: 20px">
-      <el-col v-show="!showCard" :span="24">
-        <el-card>
-          <div
-            ref="chartContainer4"
-            class="chart"
-            style="width: 100%; height: 400px"
-          ></div>
-        </el-card>
-      </el-col>
-    </el-row>
+      <el-row :gutter="20" style="margin-bottom: 20px">
+        <el-col v-show="!showCard" :span="24">
+          <el-card class="animate__animated animate__fadeInDown">
+            <div ref="chartContainer4" class="chart" style="width: 100%; height: 400px"></div>
+          </el-card>
+        </el-col>
+      </el-row>
 
-    <el-row :gutter="20" style="margin-bottom: 20px">
-      <el-col :span="24">
-        <el-card>
-          <div
-            ref="chartContainer3"
-            class="chart"
-            style="width: 100%; height: 400px"
-          ></div>
-        </el-card>
-      </el-col>
-    </el-row>
+      <el-row :gutter="20" style="margin-bottom: 20px">
+        <el-col :span="24">
+          <el-card class="animate__animated animate__fadeInDown">
+            <div ref="chartContainer3" class="chart" style="width: 100%; height: 400px"></div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
   </div>
 </template>
 

@@ -305,7 +305,7 @@ const showCard = computed(() => {
 
 </script>
 <template>
-  <div class="flex text-2xl font-bold w-max mt-2" :style="{
+  <div class="flex text-2xl font-bold w-max mt-2 animate__animated animate__fadeInDown" :style="{
     'margin-left': isCollapse ? '20px' : '0px',
     transition: 'margin-left .75s ease',
   }">
@@ -315,7 +315,7 @@ const showCard = computed(() => {
   <!-- 头像1 -->
   <el-row>
     <el-col>
-      <el-card class='config-all' shadow="always">
+      <el-card class='config-all animate__animated animate__fadeInDown' shadow="always">
         <template #header>
           <div class="font-bold mb-xs" style="font-size: 18px;">头像修改</div>
         </template>
@@ -336,7 +336,7 @@ const showCard = computed(() => {
   <!-- 基本信息1 -->
   <el-row>
     <el-col>
-      <el-card class='config-all' shadow="always">
+      <el-card class='config-all animate__animated animate__fadeInDown' shadow="always">
         <template #header>
           <div class="font-bold mb-xs" style="font-size: 18px; ">基本信息</div>
         </template>
@@ -361,8 +361,8 @@ const showCard = computed(() => {
   </el-row>
   <!-- 修改密码 -->
   <el-row>
-    <el-col class="animate__animated animate__fadeIn">
-      <el-card class="config-all" shadow="always">
+    <el-col>
+      <el-card class="config-all animate__animated animate__fadeInDown" shadow="always">
         <template #header>
           <div class="font-bold mb-xs" style="font-size: 18px;">更改密码</div>
         </template>
@@ -403,9 +403,10 @@ const showCard = computed(() => {
       </el-card>
     </el-col>
   </el-row>
+  <!-- 关于我们 -->
   <el-row>
-    <el-col  >
-      <el-card class='config-all' shadow="always">
+    <el-col>
+      <el-card class='config-all animate__animated animate__fadeInDown' shadow="always">
         <template #header>
           <div class="font-bold mb-xs" style="font-size: 18px">关于我们</div>
         </template>

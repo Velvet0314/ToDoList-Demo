@@ -174,7 +174,7 @@ const login = (formEl) => {
 .animate__animated.animate__bounceInLeft {
   --animate-duration: 1.45s;
 }
-.animate__animated.animate__fadeInDown {
+.animate__animated.animate__fadeIn {
   --animate-duration: 1.15s;
 }
 .animate__animated.animate__fadeInDown {

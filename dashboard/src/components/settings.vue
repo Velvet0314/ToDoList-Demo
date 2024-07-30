@@ -20,6 +20,9 @@ const router = useRouter();
 const { isCollapse } = storeToRefs(store);
 const passFormRef = ref(null);
 const basicInfoFormRef = ref(null);
+// 头像上传
+const imageUrl = ref(null);
+const apiUrl = ref("/api/user/uploadPic");
 
 // 基本信息表单及其验证规则
 const basicInfoForm = reactive({
@@ -231,9 +234,7 @@ const resetPass = async (formEl) => {
   }
 };
 
-// 头像上传
-const imageUrl = ref(null);
-const apiUrl = ref("/api/user/uploadPic");
+
 
 const handleAvatarSuccess = async (response, uploadFile) => {
   console.log(response);
@@ -274,9 +275,6 @@ onMounted(async () => {
     userId.value = info.user_name;
     nickname.value = info.nickname;
     avatar.value = info.user_pic;
-    // console.log(userId.value);
-    // console.log(nickname.value);
-
     passForm.userId = userId.value;
     basicInfoForm.nickname = nickname.value;
   } catch (error) {
@@ -284,12 +282,11 @@ onMounted(async () => {
   }
 });
 
-// 自适应布局
 
 // 页面大小小于一定大小时自动收缩侧边栏
 const handleResize = () => {
   width.value = window.innerWidth;
-  isCollapse.value = window.innerWidth < 768;
+  isCollapse.value = window.innerWidth < 1024;
 };
 
 const width = ref(window.innerWidth);
@@ -303,192 +300,31 @@ onUnmounted(() => {
 });
 
 const showCard = computed(() => {
-  if (isCollapse.value) {
-    return width.value >= 900;
-  }
   return width.value > 1024;
 });
 
-const cardStyleP = computed(() => {
-  if (isCollapse.value) {
-    if (width.value < 1024) return `${width.value - 100}px`;
-  }
-  if (width.value < 1024) return `${width.value - 300}px`;
-});
 </script>
-
 <template>
-  <div
-    class="flex text-2xl font-bold w-max mt-2"
-    :style="{
-      'margin-left': isCollapse ? '20px' : '0px',
-      transition: 'margin-left .75s ease',
-    }"
-  >
+  <div class="flex text-2xl font-bold w-max mt-2" :style="{
+    'margin-left': isCollapse ? '20px' : '0px',
+    transition: 'margin-left .75s ease',
+  }">
     账户信息
   </div>
   <el-divider />
-  <el-row class="flex" :gutter="20">
-    <el-col
-      style="z-index: 2"
-      :xs="12"
-      :sm="12"
-      :md="12"
-      :lg="12"
-      class="animate__animated animate__fadeIn"
-    >
-      <el-card
-        class="config-password"
-        shadow="always"
-        :style="{ width: cardStyleP }"
-        :collapse="isCollapse"
-      >
+  <!-- 头像1 -->
+  <el-row>
+    <el-col>
+      <el-card class='config-all' shadow="always">
         <template #header>
-          <div class="font-bold mb-xs" style="font-size: 18px">更改密码</div>
-        </template>
-
-        <div class="flex flex-col items-center justify-center">
-          <el-form
-            ref="passFormRef"
-            style="max-width: 600px"
-            :model="passForm"
-            status-icon
-            :rules="passFormRules"
-            label-width="100px"
-            label-position="left"
-            class="register_form mt-5"
-          >
-            <el-form-item label="当前账户" prop="userId">
-              <el-input
-                size="large"
-                v-model="passForm.userId"
-                type="text"
-                autocomplete="off"
-                :placeholder="userId"
-                class="inputbox"
-                disabled
-              />
-            </el-form-item>
-            <el-form-item label="验证码" prop="verifyCode">
-              <el-input
-                size="large"
-                v-model="passForm.verifyCode"
-                type="text"
-                autocomplete="off"
-                placeholder="请输入你的验证码"
-                class="inputbox-varify"
-              >
-                <template #append>
-                  <el-button
-                    color="#2283e5"
-                    v-model="passForm.verifyCode"
-                    @click="sendverifyCode(passFormRef)"
-                    class="varify-button"
-                    :disabled="!canSend"
-                    >{{ canSend ? "获取" : ` ${timer} s` }}</el-button
-                  >
-                </template>
-              </el-input>
-            </el-form-item>
-            <el-form-item label="新密码" prop="pass">
-              <el-input
-                size="large"
-                v-model="passForm.pass"
-                type="text"
-                autocomplete="off"
-                placeholder="请正确输入你的新密码"
-                class="inputbox"
-              />
-            </el-form-item>
-            <el-form-item label="重复新密码" prop="checkPass">
-              <el-input
-                size="large"
-                v-model="passForm.checkPass"
-                type="text"
-                autocomplete="off"
-                placeholder="请再次正确输入你的新密码"
-                class="inputbox"
-              />
-            </el-form-item>
-            <el-form-item>
-              <div class="flex justify-end w-full">
-                <el-button
-                  type="primary"
-                  @click="resetPass(passFormRef)"
-                  class="text-sm h-[40px] w-[90px] mt-4 mb-5"
-                  color="#2283e5"
-                >
-                  确认修改
-                </el-button>
-              </div>
-            </el-form-item>
-          </el-form>
-        </div>
-      </el-card>
-    </el-col>
-    <el-col :xs="12" :sm="12" :md="12" :lg="12">
-      <el-card
-        v-if="showCard"
-        shadow="always"
-        :class="isCollapse ? 'config-basic-collapsed' : 'config-basic-expand'"
-      >
-        <template #header>
-          <div class="font-bold mb-xs" style="font-size: 18px">基本信息</div>
-        </template>
-        <div class="flex flex-col items-center justify-center">
-          <el-form
-            ref="basicInfoFormRef"
-            style="max-width: 600px"
-            :model="basicInfoForm"
-            :rules="basicInfoFormRules"
-            label-width="80px"
-            label-position="left"
-            class="register_form mt-5"
-          >
-            <el-form-item label="昵称" prop="nickname">
-              <el-input
-                size="large"
-                v-model="basicInfoForm.nickname"
-                type="text"
-                autocomplete="off"
-                class="inputbox"
-              />
-            </el-form-item>
-            <el-form-item>
-              <el-button
-                type="primary"
-                @click="resetBasicInfo(basicInfoFormRef)"
-                class="text-sm h-[40px] w-[90px] mt-4 mb-5"
-                color="#2283e5"
-              >
-                确认修改
-              </el-button></el-form-item
-            >
-          </el-form>
-        </div>
-      </el-card>
-    </el-col>
-    <el-col :xs="12" :sm="12" :md="12" :lg="12">
-      <el-card
-        v-if="showCard"
-        shadow="always"
-        :class="isCollapse ? 'config-basic-collapsed' : 'config-basic-expand'"
-      >
-        <template #header>
-          <div class="font-bold mb-xs" style="font-size: 18px">头像修改</div>
+          <div class="font-bold mb-xs" style="font-size: 18px;">头像修改</div>
         </template>
         <el-form>
-          <el-form-item label="头像" prop="avatar">
-            <el-upload
-              class="avatar-uploader"
-              :action="apiUrl"
-              :headers="{
-                Authorization: tokenStore.token,
-              }"
-              :show-file-list="false"
-              :on-success="handleAvatarSuccess"
-              :before-upload="beforeAvatarUpload"
-            >
+          <el-form-item style=" margin-left: 10%;" label="头像" prop="avatar">
+            <el-upload class="avatar-uploader" :action="apiUrl" :headers="{
+              Authorization: tokenStore.token,
+            }" :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload"
+              style=" margin-left: 5%;">
               <img v-if="imageUrl" :src="imageUrl" class="avatar" />
               <el-avatar :src="avatar" v-else class="avatar-uploader-icon" shape="square" :size="125"></el-avatar>
             </el-upload>
@@ -497,68 +333,108 @@ const cardStyleP = computed(() => {
       </el-card>
     </el-col>
   </el-row>
+  <!-- 基本信息1 -->
   <el-row>
     <el-col>
-      <el-card
-        v-if="!showCard"
-        shadow="always"
-        :class="isCollapse ? 'config-basic-collapsed1' : 'config-basic-expand1'"
-      >
-        <!-- 框名 -->
+      <el-card class='config-all' shadow="always">
         <template #header>
-          <div class="font-bold mb-xs" style="font-size: 18px">基本信息</div>
+          <div class="font-bold mb-xs" style="font-size: 18px; ">基本信息</div>
         </template>
-
-        <div class="flex flex-col items-center justify-center">
-          <el-form
-            style="max-width: 600px"
-            :model="passForm"
-            status-icon
-            :rules="rules"
-            label-width="80px"
-            label-position="left"
-            class="register_form mt-5"
-          >
-            <!-- 昵称 -->
+        <div>
+          <el-form ref="basicInfoFormRef" style="max-width: 600px; margin-left: 10%;" :model="basicInfoForm"
+            :rules="basicInfoFormRules" label-width="80px" label-position="left" class="register_form mt-5 left-align">
             <el-form-item label="昵称" prop="nickname">
-              <el-input
-                size="large"
-                v-model="passForm.nickname"
-                type="text"
-                autocomplete="off"
-                placeholder="请输入你的昵称"
-              />
+              <el-input size="large" v-model="basicInfoForm.nickname" type="text" autocomplete="off" class="inputbox" />
+            </el-form-item>
+            <el-form-item>
+              <div class="flex justify-end w-full">
+                <el-button type="primary" @click="resetBasicInfo(basicInfoFormRef)"
+                  class="text-sm h-[40px] w-[90px] mt-4 mb-5" color="#2283e5">
+                  确认修改
+                </el-button>
+              </div>
             </el-form-item>
           </el-form>
         </div>
       </el-card>
     </el-col>
-    <el-col :xs="12" :sm="12" :md="12" :lg="12">
-      <el-card
-        shadow="always"
-        v-if="!showCard"
-        :style="{ width: cardStyleP }"
-        :class="isCollapse ? 'config-basic-collapsed1' : 'config-basic-expand1'"
-      >
+  </el-row>
+  <!-- 修改密码 -->
+  <el-row>
+    <el-col class="animate__animated animate__fadeIn">
+      <el-card class="config-all" shadow="always">
         <template #header>
-          <div class="font-bold mb-xs" style="font-size: 18px">头像修改</div>
+          <div class="font-bold mb-xs" style="font-size: 18px;">更改密码</div>
         </template>
-        <div class="flex flex-col items-center justify-center">
-          <el-form>
-            <el-form-item label="头像" prop="avatar">
-              <el-upload
-                class="avatar-uploader"
-                :action="apiUrl"
-                :headers="{
-                  Authorization: tokenStore.token,
-                }"
-                :show-file-list="false"
-                :on-success="handleAvatarSuccess"
-                :before-upload="beforeAvatarUpload"
-              >
-                <img v-if="imageUrl" :src="imageUrl" class="avatar" />
-                <el-avatar :src="avatar" v-else class="avatar-uploader-icon" shape="square" :size="125"></el-avatar>
-              </el-upload>
+        <div>
+          <el-form ref="passFormRef" style="max-width: 600px; margin-left: 10%;" :model="passForm" status-icon
+            :rules="passFormRules" label-width="100px" label-position="left" class="register_form mt-5">
+            <el-form-item label="当前账户" prop="userId">
+              <el-input size="large" v-model="passForm.userId" type="text" autocomplete="off" :placeholder="userId"
+                class="inputbox" disabled />
+            </el-form-item>
+            <el-form-item label="验证码" prop="verifyCode">
+              <el-input size="large" v-model="passForm.verifyCode" type="text" autocomplete="off" placeholder="请输入你的验证码"
+                class="inputbox-varify">
+                <template #append>
+                  <el-button color="#2283e5" v-model="passForm.verifyCode" @click="sendverifyCode(passFormRef)"
+                    class="varify-button" :disabled="!canSend">{{ canSend ? "获取" : ` ${timer} s` }}</el-button>
+                </template>
+              </el-input>
+            </el-form-item>
+            <el-form-item label="新密码" prop="pass">
+              <el-input size="large" v-model="passForm.pass" type="text" autocomplete="off" placeholder="请正确输入你的新密码"
+                class="inputbox" />
+            </el-form-item>
+            <el-form-item label="重复新密码" prop="checkPass">
+              <el-input size="large" v-model="passForm.checkPass" type="text" autocomplete="off"
+                placeholder="请再次正确输入你的新密码" class="inputbox" />
+            </el-form-item>
+            <el-form-item>
+              <div class="flex justify-end w-full">
+                <el-button type="primary" @click="resetPass(passFormRef)" class="text-sm h-[40px] w-[90px] mt-4 mb-5"
+                  color="#2283e5">
+                  确认修改
+                </el-button>
+              </div>
+            </el-form-item>
+          </el-form>
+        </div>
+      </el-card>
+    </el-col>
+  </el-row>
+  <el-row>
+    <el-col  >
+      <el-card class='config-all' shadow="always">
+        <template #header>
+          <div class="font-bold mb-xs" style="font-size: 18px">关于我们</div>
+        </template>
+        <div>
+          <el-form style="max-width: 600px; margin-left: 10%; font-size: 18px" label-width="20%" label-position="left ">
+            <el-form-item label="于潇">
+              <div class="about-us-content">
+                于--组长，全栈工程师，任务协调者，文档编写者--潇
+              </div>
+            </el-form-item>
+            <el-form-item label="李青阳">
+              <div class="about-us-content">
+                全栈工程师
+              </div>
+            </el-form-item>
+            <el-form-item label="于钊京">
+              <div class="about-us-content">
+                全栈工程师
+              </div>
+            </el-form-item>
+            <el-form-item label="李某某">
+              <div class="about-us-content">
+                全栈工程师
+              </div>
+            </el-form-item>
+            <el-form-item label="雪烩梨汁">
+              <div class="about-us-content">
+                全栈工程师
+              </div>
             </el-form-item>
           </el-form>
         </div>
@@ -573,46 +449,52 @@ const cardStyleP = computed(() => {
   height: 125px;
   display: block;
 }
+
 .config-basic-collapsed,
 .config-basic-expand {
   min-height: 90%;
 }
 
 .config-basic-collapsed {
-  @apply mr-30;
+
   margin: 60px 0 0 50px;
   width: 80%;
 }
 
 .config-basic-expand {
-  @apply ml-10;
+
   margin: 30px 0 0 50px;
   width: 80%;
   height: 450px;
 }
+
 .config-basic-collapsed1 {
-  @apply mr-30;
+
   margin: 50px auto;
 }
 
 .config-basic-expand1 {
-  @apply ml-10;
+
   margin: 50px auto;
 }
 
-.config-password {
+.config-all {
   border-radius: 10px;
+  margin-left: 15%;
+  margin-right: 15%;
+  margin-bottom: 20px;
+}
 
-  margin: auto;
+.config-allCollaspe {
+  border-radius: 10px;
+  margin-left: 7%;
+  margin-right: 7%;
+  margin-bottom: 20px;
 }
 
 .login {
-  @apply text-sm font-bold;
-  color: #2283e5;
-}
 
-.inputbox {
-  @apply mb-1;
+  color: #2283e5;
 }
 
 .animate__animated.animate__fadeInDown {
@@ -643,9 +525,7 @@ const cardStyleP = computed(() => {
 :deep(.el-message-box__header) {
   font-weight: bold;
 }
-</style>
 
-<style>
 .message-box {
   --el-messagebox-width: 500px;
   --el-messagebox-padding-primary: 30px;
@@ -676,11 +556,14 @@ const cardStyleP = computed(() => {
 
 .el-icon.avatar-uploader-icon {
   position: absolute;
-  top: 50%; /* 垂直居中 */
-  left: 50%; /* 水平居中 */
-  transform: translate(-50%, -50%); /* 精确居中定位 */
+  top: 50%;
+  /* 垂直居中 */
+  left: 50%;
+  /* 水平居中 */
+  transform: translate(-50%, -50%);
+  /* 精确居中定位 */
   font-size: 28px;
   color: #8c939d;
-  text-align: center;
+  text-align: left;
 }
 </style>

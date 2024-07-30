@@ -321,13 +321,18 @@ const showCard = computed(() => {
         </template>
         <el-form>
           <el-form-item style=" margin-left: 10%;" label="头像" prop="avatar">
-            <el-upload class="avatar-uploader" :action="apiUrl" :headers="{
-              Authorization: tokenStore.token,
-            }" :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload"
-              style=" margin-left: 5%;">
-              <img v-if="imageUrl" :src="imageUrl" class="avatar" />
-              <el-avatar :src="avatar" v-else class="avatar-uploader-icon" shape="square" :size="125"></el-avatar>
-            </el-upload>
+            <el-popover placement="right-start" width="auto" trigger="hover" auto-close="1000" content="点击此处更换头像QAQ">
+              <template #reference>
+                <el-upload class="avatar-uploader" :action="apiUrl" :headers="{
+                  Authorization: tokenStore.token,
+                }" :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload"
+                  style=" margin-left: 5%;">
+                  <img v-if="imageUrl" :src="imageUrl" class="avatar" />
+                  <el-avatar :src="avatar" v-else class="avatar-uploader-icon" shape="square" :size="125"></el-avatar>
+                </el-upload>
+              </template>
+            </el-popover>
+
           </el-form-item>
         </el-form>
       </el-card>

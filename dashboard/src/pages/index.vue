@@ -2,7 +2,8 @@
 import { ref, onMounted, onUnmounted, inject } from "vue";
 import { Menu as IconMenu, Setting, Fold } from "@element-plus/icons-vue";
 import { useLayoutStore } from "~/stores/layoutstore";
-import { useTokenStore } from '~/stores/tokenstore'
+import { useTokenStore } from "~/stores/tokenstore";
+import { useHitokotoStore } from '~/stores/hitokoto';
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -19,14 +20,17 @@ const router = useRouter();
 const tokenStore = useTokenStore();
 
 const logout = () => {
-  
   tokenStore.removeToken();
   console.log("清除后的 token:", tokenStore.token);
   ElMessage({
     type: "success",
     message: "已退出登录",
   });
-  router.push('/login');
+  const store = useHitokotoStore();
+  store.intervalId && clearInterval(store.intervalId);
+  store.intervalId = null;
+
+  router.push("/login");
 };
 
 const handleSelect = (key, keyPath) => {
@@ -40,20 +44,17 @@ const handleClose = (key, keyPath) => {
   console.log(key, keyPath);
 };
 
-
 onMounted(async () => {
   const tokenStore = useTokenStore();
   try {
     const info = await getUserInfo(tokenStore, axios);
-    console.log(info);
-    console.log(info.user_pic);
+    // console.log(info);
+    // console.log(info.user_pic);
     avatar.value = info.user_pic;
-
   } catch (error) {
     console.error("获取用户信息失败:", error);
   }
 });
-
 </script>
 
 <template>
@@ -73,9 +74,7 @@ onMounted(async () => {
         <div class="flex-grow" />
         <el-sub-menu :teleported="true">
           <template #title>
-            <el-avatar
-              :src="avatar"
-            />
+            <el-avatar :src="avatar" />
           </template>
           <el-menu-item index="settings">
             <el-icon><Setting /></el-icon><span>设置</span>

@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed, inject } from "vue";
+import { ref, onMounted, onUnmounted, computed, inject, reactive } from "vue";
 import { useLayoutStore } from "~/stores/layoutstore";
+import { useTokenStore } from "~/stores/tokenstore";
 import { storeToRefs } from "pinia";
 
 // 需要的常量
@@ -9,37 +10,17 @@ const store = useLayoutStore();
 const { isCollapse } = storeToRefs(store);
 const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
 
-// hitokoto
-const hitokotoText = ref(":D 获取中...");
-const hitokotoUrl = ref("#");
-const hitokotoFrom = ref("");
+import { useHitokotoStore } from "~/stores/hitokoto";
+
+const hitokoto = useHitokotoStore();
+const suggestionList = reactive([]);
 
 onMounted(() => {
-  const fetchData = () => {
-    axios
-      .get("https://v1.hitokoto.cn")
-      .then(({ data }) => {
-        hitokotoText.value = data.hitokoto;
-        hitokotoFrom.value = data.from;
-        hitokotoUrl.value = `https://hitokoto.cn/?uuid=${data.uuid}`;
-      })
-      .catch((error) => {
-        console.error(error);
-        hitokotoText.value = "加载失败";
-        hitokotoFrom.value = "";
-        hitokotoUrl.value = "#";
-      });
-  };
-
-  fetchData();
-
-  const intervalId = setInterval(fetchData, 600000);
-
-  onMounted(() => {
-    clearInterval(intervalId);
-  });
+  if (!hitokoto.text) {
+    hitokoto.fetchData();
+  }
+  suggestions();
 });
-
 const width = ref(window.innerWidth);
 
 const handleResize = () => {
@@ -61,23 +42,41 @@ const showCard = computed(() => {
 
 // 日历
 const cardStyleC = computed(() => {
-  return { width: width.value >= 1024 ? '100%' : '160%', marginRight: '20px' };
+  return { width: width.value >= 1024 ? "100%" : "160%", marginRight: "20px" };
 });
 
 // 建议
 const cardStyleS = computed(() => {
-  return { width: '100%', marginRight: '20px' };
+  return { width: "100%", marginRight: "20px" };
 });
 
 // 数据分析
 const cardStyleD = computed(() => {
-  return { width: width.value >= 1024 ? '100%' : '160%', marginRight: '20px' };
+  return { width: width.value >= 1024 ? "100%" : "160%", marginRight: "20px" };
 });
 
 // 一言
 const cardStyleO = computed(() => {
-  return { width: '100%', marginRight: '20px' };
+  return { width: "100%", marginRight: "20px" };
 });
+
+const suggestions = async () => {
+  const tokenStore = useTokenStore();
+  const token = tokenStore.token;
+
+  try {
+    axios
+      .get("/task/getAllOrderedTasks", {
+        headers: {
+          Authorization: token,
+        },
+      })
+      .then((response) => {
+        suggestionList.splice(0, suggestionList.length, ...response.data.info);
+        console.log(suggestionList);
+      });
+  } catch (error) {}
+};
 </script>
 
 <template>
@@ -99,28 +98,32 @@ const cardStyleO = computed(() => {
         </el-col>
 
         <el-col :span="9">
-          <el-card v-if="showCard" class="suggestion" :style="cardStyleS" :collapse="isCollapse">
+          <el-card
+            v-if="showCard"
+            class="suggestion"
+            :style="cardStyleS"
+            :collapse="isCollapse"
+          >
             <template #header>
               <div class="card-header">
                 <span>建议</span>
               </div>
             </template>
-            <div>
-              <el-collapse v-model="activeNames" @change="handleChange">
-                <el-collapse-item title="Consistency" name="1">
-                  <div>1</div>
-                </el-collapse-item>
-                <el-collapse-item title="Feedback" name="2">
-                  <div>2</div>
-                </el-collapse-item>
-                <el-collapse-item title="Efficiency" name="3">
-                  <div>3</div>
-                </el-collapse-item>
-                <el-collapse-item title="Controllability" name="4">
-                  <div>4</div>
-                </el-collapse-item>
-              </el-collapse>
-            </div>
+            <el-scrollbar style="max-height: 52.5vh; overflow-y: auto">
+              <div
+                v-for="task in suggestionList"
+                :key="task.id"
+                class="w-[100%]"
+              >
+                <div style="display: flex; align-items: center">
+                  <el-card class="task-card" shadow="hover">
+                    <div style="font-size: 16px">
+                      {{ task.task_name }}
+                    </div>
+                  </el-card>
+                </div>
+              </div>
+            </el-scrollbar>
           </el-card>
         </el-col>
       </el-row>
@@ -140,14 +143,19 @@ const cardStyleO = computed(() => {
         </el-col>
 
         <el-col :span="9">
-          <el-card v-if="showCard" class="hitokoto-part"
-            :class="isCollapse ? 'hitokoto-collapsed' : 'hitokoto-expanded'" :collapse="isCollapse" :style="cardStyleO">
+          <el-card
+            v-if="showCard"
+            class="hitokoto-part"
+            :class="isCollapse ? 'hitokoto-collapsed' : 'hitokoto-expanded'"
+            :collapse="isCollapse"
+            :style="cardStyleO"
+          >
             <div id="hitokoto-title">一言</div>
             <div id="hitokoto-text">
-              <a :href="hitokotoUrl">{{ hitokotoText }}</a>
+              <a :href="hitokoto.url">{{ hitokoto.text }}</a>
             </div>
-            <div v-if="hitokotoFrom" id="hitokoto-from" class="flex flex-col">
-              ——&ensp;《{{ hitokotoFrom }}》
+            <div v-if="hitokoto.from" id="hitokoto-from" class="flex flex-col">
+              ——&ensp;《{{ hitokoto.from }}》
             </div>
           </el-card>
         </el-col>
@@ -156,28 +164,17 @@ const cardStyleO = computed(() => {
       <!-- 小页面时在下方展示 -->
       <el-row :gutter="30" :span="16">
         <el-col :span="23" :style="{ marginRight: 'auto' }">
-          <el-card v-if="!showCard" class="suggestion1" :style="cardStyleS" :collapse="isCollapse">
+          <el-card
+            v-if="!showCard"
+            class="suggestion1"
+            :style="cardStyleS"
+            :collapse="isCollapse"
+          >
             <template #header>
               <div class="card-header">
                 <span>建议</span>
               </div>
             </template>
-            <div>
-              <el-collapse v-model="activeNames" @change="handleChange">
-                <el-collapse-item title="Consistency" name="1">
-                  <div>1</div>
-                </el-collapse-item>
-                <el-collapse-item title="Feedback" name="2">
-                  <div>2</div>
-                </el-collapse-item>
-                <el-collapse-item title="Efficiency" name="3">
-                  <div>3</div>
-                </el-collapse-item>
-                <el-collapse-item title="Controllability" name="4">
-                  <div>4</div>
-                </el-collapse-item>
-              </el-collapse>
-            </div>
           </el-card>
         </el-col>
       </el-row>
@@ -185,9 +182,13 @@ const cardStyleO = computed(() => {
       <!-- 小页面时在下方展示 -->
       <el-row>
         <el-col :span="23">
-          <el-card v-if="!showCard" class="hitokoto-part"
-            :class="isCollapse ? 'hitokoto-collapsed1' : 'hitokoto-expanded1'" :collapse="isCollapse"
-            :style="cardStyleO">
+          <el-card
+            v-if="!showCard"
+            class="hitokoto-part"
+            :class="isCollapse ? 'hitokoto-collapsed1' : 'hitokoto-expanded1'"
+            :collapse="isCollapse"
+            :style="cardStyleO"
+          >
             <div id="hitokoto-title">一言</div>
             <div id="hitokoto-text">
               <a :href="hitokotoUrl">{{ hitokotoText }}</a>
@@ -202,8 +203,33 @@ const cardStyleO = computed(() => {
   </transition>
 </template>
 
-
 <style scoped>
+.task-item {
+  padding: 10px;
+  /* 添加内边距使得布局更加美观 */
+  border-bottom: 1px solid #ccc;
+  /* 添加分隔线 */
+  transition: background-color 0.3s;
+  /* 平滑过渡效果 */
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+.task-card {
+  height: 60px;
+  /* 设置每个卡片的高度 */
+  backdrop-filter: blur(5px);
+  /* 添加背景虚化效果 */
+  background-color: rgba(255, 255, 255, 0.5);
+  /* 需要设置背景颜色，并带有透明度 */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  /* 可选，增加一个边框使效果更明显 */
+}
+
+.task-card:hover {
+  background-color: #e4e7ed;
+  /* 鼠标悬停时的背景颜色 */
+}
+
 .hitokoto-part {
   display: flex;
   flex-direction: column;
@@ -244,7 +270,7 @@ const cardStyleO = computed(() => {
   width: 100%;
 }
 
-.el-calendar-day>p {
+.el-calendar-day > p {
   font-size: 13px;
 }
 
@@ -347,7 +373,6 @@ const cardStyleO = computed(() => {
 
 .stat-content .el-progress--line {
   margin-bottom: 15px;
-
 }
 
 :deep(.el-calendar-table .el-calendar-day) {

@@ -765,6 +765,7 @@ const setEndTime = async (task) => {
             ><el-icon> <CloseBold /> </el-icon
           ></el-button>
         </div>
+        <el-empty v-show="!tasksList.length"description="现在还没有任务，快点击上方加号创建任务吧" class="animate__animated animate__fadeInLeft"/>
         <el-scrollbar style="max-height: 86vh; overflow-y: auto">
           <div
             class="my-10 task-item w-[100%] animate__animated animate__fadeInLeft"
@@ -781,7 +782,7 @@ const setEndTime = async (task) => {
                 <div style="font-size: 16px">
                   {{ task.task_name }}
                 </div>
-                <div class="flex">
+                <div class="flex" :style="{ marginLeft: showEditCard ? '-2.76%' : '-1.2%' }">
                   <el-date-picker
                     v-model="task.end_time"
                     type="date"
@@ -811,7 +812,7 @@ const setEndTime = async (task) => {
                     >
                     <el-dropdown-item
                       divided
-                      @click.native="deleteTask(task, taskSelectStore.kind)"
+                      @click.native="deleteTask(task, taskSelectStore.kind), showEditCard = false"
                       >删除任务</el-dropdown-item
                     >
                   </el-dropdown-menu>

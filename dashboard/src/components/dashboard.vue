@@ -168,30 +168,65 @@ const getLastestTask = async () => {
         <el-col :span="15">
           <el-card class="data-stat" :style="cardStyleD" :collapse="isCollapse">
             <div class="stat-content">
-              <div class="stat-title">提醒</div>
-              <el-countdown format="DD [days] HH:mm:ss" :value="countDown">
-                <template #title>
-                  <div style="display: inline-flex; align-items: center">
-                    <el-icon style="margin-right: 4px" :size="12">
+              <div class="stat-title" style="margin-bottom: 1.2%">提醒</div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: flex-start;
+                  margin-bottom: 1.2%;
+                "
+              >
+                <div style="flex: 1; text-align: center">
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                      margin-top: 3%;
+                    "
+                  >
+
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 5%;
+                        font-size: 16px;
+                      "
+                    >
+                    <el-icon style="margin-right: 4px" :size="18">
                       <Calendar />
                     </el-icon>
-                    距离最近未完成任务的截至时间还剩
+                      距最近未完成任务的截至时间还剩
+                    </div>
+                    <el-countdown
+                      format="DD [days] HH:mm:ss"
+                      :value="countDown"
+                      style="margin-bottom: 5%"
+                    ></el-countdown>
+                    <div class="countdown-footer">
+                      {{ dayjs(countDown).format("YYYY-MM-DD") }}
+                    </div>
                   </div>
-                </template>
-              </el-countdown>
-              <div class="countdown-footer">
-                {{ dayjs(countDown).format("YYYY-MM-DD") }}
-              </div>
-              <div>未完成任务数</div>
-              <div>{{ taskStats.allUnfinishedTasksCount }}</div>
-              <div>未完成任务平均进度</div>
-              <div>
-                {{ (taskStats.avgProcessOfUnfinishedTasks * 100).toFixed(2) }} %
+                </div>
+                <div style="flex: 1; text-align: center; margin-top: 0.8%">
+                  <div>未完成任务数</div>
+                  <div>{{ taskStats.allUnfinishedTasksCount }}</div>
+                </div>
+                <div style="flex: 1; text-align: center; margin-top: 0.8%">
+                  <div style="margin-bottom: 15%">未完成任务平均进度</div>
+                  <div>
+                    {{
+                      (taskStats.avgProcessOfUnfinishedTasks * 100).toFixed(2)
+                    }}
+                    %
+                  </div>
+                </div>
               </div>
             </div>
           </el-card>
         </el-col>
-
         <el-col :span="9">
           <el-card
             v-if="showCard"
@@ -284,6 +319,7 @@ const getLastestTask = async () => {
   cursor: pointer;
   margin-bottom: 5px;
 }
+
 .task-card {
   height: 60px;
   /* 设置每个卡片的高度 */

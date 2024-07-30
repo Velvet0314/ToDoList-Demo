@@ -1,7 +1,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, inject, reactive } from "vue";
+import dayjs from "dayjs";
+import { Calendar } from "@element-plus/icons-vue";
 import { useLayoutStore } from "~/stores/layoutstore";
 import { useTokenStore } from "~/stores/tokenstore";
+import getTaskStats from "~/api/getTaskStats";
 import { storeToRefs } from "pinia";
 
 // 需要的常量
@@ -12,14 +15,24 @@ const format = (percentage) => (percentage === 100 ? "Full" : `${percentage}%`);
 
 import { useHitokotoStore } from "~/stores/hitokoto";
 
+const tokenStore = useTokenStore();
+const token = tokenStore.token;
 const hitokoto = useHitokotoStore();
 const suggestionList = reactive([]);
 
-onMounted(() => {
+const value2 = ref(dayjs().add(1, "month").startOf("month"));
+
+const countDown = ref("");
+const taskStats = ref({});
+
+onMounted(async () => {
   if (!hitokoto.text) {
     hitokoto.fetchData();
   }
+  const info = await getTaskStats(tokenStore, axios);
+  taskStats.value = info;
   suggestions();
+  getLastestTask();
 });
 const width = ref(window.innerWidth);
 
@@ -77,6 +90,24 @@ const suggestions = async () => {
       });
   } catch (error) {}
 };
+
+const getLastestTask = async () => {
+  const tokenStore = useTokenStore();
+  const token = tokenStore.token;
+
+  try {
+    axios
+      .get("/task/getEndtime", {
+        headers: {
+          Authorization: token,
+        },
+      })
+      .then((response) => {
+        console.log(response.data.info);
+        countDown.value = new Date(response.data.info);
+      });
+  } catch (error) {}
+};
 </script>
 
 <template>
@@ -113,10 +144,15 @@ const suggestions = async () => {
               <div
                 v-for="task in suggestionList"
                 :key="task.id"
-                class="w-[100%]"
+                class="w-[100%] cursor-pointer"
+                @click="$router.push('/plan')"
               >
                 <div style="display: flex; align-items: center">
-                  <el-card class="task-card" shadow="hover">
+                  <el-card
+                    class="task-card"
+                    shadow="hover"
+                    :style="{ width: '200%' }"
+                  >
                     <div style="font-size: 16px">
                       {{ task.task_name }}
                     </div>
@@ -132,12 +168,26 @@ const suggestions = async () => {
         <el-col :span="15">
           <el-card class="data-stat" :style="cardStyleD" :collapse="isCollapse">
             <div class="stat-content">
-              <div class="stat-title">数据统计</div>
-              <el-progress :percentage="50" />
-              <el-progress :percentage="100" :format="format" />
-              <el-progress :percentage="100" status="success" />
-              <el-progress :percentage="100" status="warning" />
-              <el-progress :percentage="50" status="exception" />
+              <div class="stat-title">提醒</div>
+              <el-countdown format="DD [days] HH:mm:ss" :value="countDown">
+                <template #title>
+                  <div style="display: inline-flex; align-items: center">
+                    <el-icon style="margin-right: 4px" :size="12">
+                      <Calendar />
+                    </el-icon>
+                    距离最近未完成任务的截至时间还剩
+                  </div>
+                </template>
+              </el-countdown>
+              <div class="countdown-footer">
+                {{ dayjs(countDown).format("YYYY-MM-DD") }}
+              </div>
+              <div>未完成任务数</div>
+              <div>{{ taskStats.allUnfinishedTasksCount }}</div>
+              <div>未完成任务平均进度</div>
+              <div>
+                {{ (taskStats.avgProcessOfUnfinishedTasks * 100).toFixed(2) }} %
+              </div>
             </div>
           </el-card>
         </el-col>
@@ -175,6 +225,26 @@ const suggestions = async () => {
                 <span>建议</span>
               </div>
             </template>
+            <el-scrollbar style="max-height: 52.5vh; overflow-y: auto">
+              <div
+                v-for="task in suggestionList"
+                :key="task.id"
+                class="w-[100%] cursor-pointer"
+                @click="$router.push('/plan')"
+              >
+                <div style="display: flex; align-items: center">
+                  <el-card
+                    class="task-card"
+                    shadow="hover"
+                    :style="{ width: '200%' }"
+                  >
+                    <div style="font-size: 16px">
+                      {{ task.task_name }}
+                    </div>
+                  </el-card>
+                </div>
+              </div>
+            </el-scrollbar>
           </el-card>
         </el-col>
       </el-row>
@@ -191,10 +261,10 @@ const suggestions = async () => {
           >
             <div id="hitokoto-title">一言</div>
             <div id="hitokoto-text">
-              <a :href="hitokotoUrl">{{ hitokotoText }}</a>
+              <a :href="hitokoto.url">{{ hitokoto.text }}</a>
             </div>
-            <div v-if="hitokotoFrom" id="hitokoto-from" class="flex flex-col">
-              ——&ensp;《{{ hitokotoFrom }}》
+            <div v-if="hitokoto.from" id="hitokoto-from" class="flex flex-col">
+              ——&ensp;《{{ hitokoto.from }}》
             </div>
           </el-card>
         </el-col>

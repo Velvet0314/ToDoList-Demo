@@ -389,7 +389,10 @@ const deleteTask = async (task, kind) => {
 };
 
 const selectedTask = ref(null); // 选中的任务
-const selectedTaskSteps = reactive([]); // 选中的任务的所有步骤
+const selectedTaskSteps = reactive({
+  values: []
+});
+
 
 const taskDetail = async (task) => {
   showEditCard.value = true; // 显示编辑界面
@@ -411,7 +414,7 @@ const taskDetail = async (task) => {
         }
       )
       .then((response) => {
-        selectedTaskSteps.values = response.data.info;
+        selectedTaskSteps.values.splice(0, selectedTaskSteps.values.length, ...response.data.info);
         console.log(selectedTaskSteps.values);
       });
   } catch (error) {}
@@ -477,7 +480,6 @@ const addNewStep = async () => {
 
   // 准备新步骤的基本信息
   const newStep = {
-    sequence: selectedTaskSteps.values.length + 1, // 假设 sequence 是基于数组长度
     content: "", // 初始内容为空
   };
 
@@ -507,7 +509,7 @@ const addNewStep = async () => {
     );
 
     if (allStepsResponse.data.info) {
-      selectedTaskSteps.values = allStepsResponse.data.info; // 更新步骤列表
+      selectedTaskSteps.values.splice(0, selectedTaskSteps.values.length, ...allStepsResponse.data.info);
       console.log("Updated steps:", selectedTaskSteps.values);
     }
   } catch (error) {
@@ -534,7 +536,7 @@ const deleteStep = async (step) => {
       )
       .then((response) => {
         // console.log(response.data.info);
-        selectedTaskSteps.values = response.data.info;
+        selectedTaskSteps.values.splice(0, selectedTaskSteps.values.length, ...response.data.info);
         console.log(selectedTaskSteps);
       });
   } catch (error) {}
@@ -553,7 +555,7 @@ const stepCompletedOrNot = async (step) => {
         },
       }
     );
-    selectedTaskSteps.values = response.data.info;
+    selectedTaskSteps.values.splice(0, selectedTaskSteps.values.length, ...response.data.info);
     console.log(selectedTaskSteps.values);
   } catch (error) {
     console.error("Failed to update step status:", error);
@@ -595,7 +597,7 @@ const taskCompleteOrNot = async (task) => {
         },
       }
     );
-    selectedTaskSteps.values = response.data.info;
+    selectedTaskSteps.values.splice(0, selectedTaskSteps.values.length, ...response.data.info);
     console.log(selectedTaskSteps.values);
   } catch (error) {
     console.error("Failed to update task favour status:", error);
@@ -785,7 +787,7 @@ const setEndTime = async (task) => {
                 <div class="flex" :style="{ marginLeft: showEditCard ? '-2.76%' : '-1.2%' }">
                   <el-date-picker
                     v-model="task.end_time"
-                    type="date"
+                    type="datetime"
                     placeholder="设置截止时间"
                     :shortcuts="shortcuts"
                     @change="setEndTime(task)"
@@ -886,7 +888,7 @@ const setEndTime = async (task) => {
               </template>
               <div
                 v-for="step in selectedTaskSteps.values"
-                :key="step.sequence"
+                :key="step.id"
               >
                 <el-input
                   placeholder="输入内容"
